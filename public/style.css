@@ -91,6 +91,15 @@ button.ghost { background: transparent; border: 1px solid var(--accent); color: 
 .present #feed li { font-size: 20px; }
 .count { color: var(--muted); font-size: 14px; }
 
+/* 좁은 화면(폰): QR을 위로 쌓고 크기 축소 */
+@media (max-width: 720px) {
+  .present { grid-template-columns: 1fr; padding: 16px; gap: 16px; }
+  .present .qr { max-width: 260px; margin: 0 auto; padding: 14px; }
+  .present .qr .big { font-size: 26px; }
+  .present #feed li { font-size: 16px; }
+  .present .poll h3 { font-size: 18px; }
+}
+
 /* poll */
 .poll {
   background: var(--card);

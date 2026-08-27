@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QR Chat</title>
-  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/style.css?v=2" />
 </head>
 <body>
   <div class="wrap">
@@ -23,7 +23,7 @@
   </div>
 
   <script type="module">
-    import { connect, send, buildLi, setCount, renderPoll, updatePoll } from "/app.js";
+    import { connect, send, buildLi, setCount, renderPoll, updatePoll } from "/app.js?v=2";
     const code = location.pathname.split("/").pop();
     const feed = document.getElementById("feed");
     const pollsEl = document.getElementById("polls");

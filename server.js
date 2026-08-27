@@ -111,7 +111,12 @@ function addReaction(code, id) {
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+// no-cache: Cloudflare가 JS/CSS를 굳혀서 낡은 번들을 서빙하지 않도록 (매 요청 재검증)
+app.use(
+  express.static(path.join(__dirname, "public"), {
+    setHeaders: (res) => res.setHeader("Cache-Control", "no-cache"),
+  })
+);
 
 const lastPost = new Map(); // ip -> ts (메시지)
 const lastNew = new Map(); // ip -> ts (이벤트 생성)
