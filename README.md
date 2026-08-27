@@ -5,10 +5,10 @@
 
 ![flow](https://img.shields.io/badge/QR%20%E2%86%92%20%EC%9D%B5%EB%AA%85%20%EC%B1%84%ED%8C%85-198038)
 
-## 지금 되는 것 (Phase 0 MVP)
-- **참가자** `/r/:code` — 폰에서 익명으로 메시지 전송, 실시간 피드
-- **발표자** `/present/:code` — 대형화면에 QR + 실시간 메시지
-- SSE 실시간 · JSONL 파일 영속 · 이벤트 문구는 JSON 파일
+## 지금 되는 것 (Phase 0–2)
+- **참가자** `/r/:code` — 폰에서 익명 메시지 + 👍 리액션 + 객관식 poll 투표
+- **발표자** `/present/:code` — 대형화면에 QR + 실시간 메시지(최신순/인기순) + poll 실시간 막대
+- SSE 실시간 · JSONL 파일 영속 · 이벤트/설문 문구는 `events/<code>.json` 하나로 관리
 
 로드맵은 [`docs/ROADMAP.md`](docs/ROADMAP.md) (리액션 → 객관식 poll → 진행제어 → export → word cloud).
 

@@ -86,3 +86,40 @@ button:disabled { opacity: .5; cursor: default; }
 .present #feed { margin-bottom: 0; }
 .present #feed li { font-size: 20px; }
 .count { color: var(--muted); font-size: 14px; }
+
+/* poll */
+.poll {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 12px 0;
+}
+.poll h3 { margin: 0 0 10px; font-size: 16px; }
+.present .poll h3 { font-size: 22px; }
+.opt {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin: 6px 0;
+  border-radius: 8px;
+  background: #232732;
+  overflow: hidden;
+}
+.opt .bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 0;
+  background: rgba(25, 128, 56, .35);
+  transition: width .35s ease;
+  z-index: 0;
+}
+.opt .lab { position: relative; z-index: 1; flex: 1; }
+.opt .cnt { position: relative; z-index: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
+.opt.clickable { cursor: pointer; }
+.opt.clickable:hover { outline: 1px solid var(--accent); }
+.opt.voted { cursor: default; }
+.opt.voted:hover { outline: none; }
+.opt.mine { outline: 2px solid var(--accent); }
+.opt.mine .lab::after { content: " ✓"; color: var(--accent); }

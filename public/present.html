@@ -20,14 +20,16 @@
           <button id="sort" type="button" class="sortbtn">최신순</button>
         </div>
       </header>
+      <div id="polls"></div>
       <ul id="feed"></ul>
     </main>
   </div>
 
   <script type="module">
-    import { connect, buildLi } from "/app.js";
+    import { connect, buildLi, renderPoll, updatePoll } from "/app.js";
     const code = location.pathname.split("/").pop();
     const feed = document.getElementById("feed");
+    const pollsEl = document.getElementById("polls");
     document.getElementById("code").textContent = code;
     document.getElementById("qr").src = `/qr/${encodeURIComponent(code)}.svg`;
 
@@ -51,7 +53,14 @@
     };
 
     connect(code, {
-      onMeta: (d) => (document.getElementById("title").textContent = d.title),
+      onMeta: (d) => {
+        document.getElementById("title").textContent = d.title;
+        (d.polls || []).forEach((p) => pollsEl.append(renderPoll(code, p, false)));
+      },
+      onVote: ({ poll, counts }) => {
+        const w = pollsEl.querySelector(`.poll[data-poll="${poll}"]`);
+        if (w) updatePoll(w, counts);
+      },
       onMsg: (m) => { msgs.set(m.id, { ...m, reactions: m.reactions || 0 }); render(); },
       onReact: ({ id, reactions }) => {
         const m = msgs.get(id);

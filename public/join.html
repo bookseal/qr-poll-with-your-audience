@@ -12,6 +12,7 @@
       <h1 id="title">…</h1>
       <div class="code">익명 채팅 · 코드 <span id="code"></span></div>
     </header>
+    <div id="polls"></div>
     <ul id="feed"></ul>
   </div>
   <div class="composer">
@@ -22,13 +23,21 @@
   </div>
 
   <script type="module">
-    import { connect, send, buildLi, setCount } from "/app.js";
+    import { connect, send, buildLi, setCount, renderPoll, updatePoll } from "/app.js";
     const code = location.pathname.split("/").pop();
     const feed = document.getElementById("feed");
+    const pollsEl = document.getElementById("polls");
     document.getElementById("code").textContent = code;
 
     connect(code, {
-      onMeta: (d) => (document.getElementById("title").textContent = d.title),
+      onMeta: (d) => {
+        document.getElementById("title").textContent = d.title;
+        (d.polls || []).forEach((p) => pollsEl.append(renderPoll(code, p, true)));
+      },
+      onVote: ({ poll, counts }) => {
+        const w = pollsEl.querySelector(`.poll[data-poll="${poll}"]`);
+        if (w) updatePoll(w, counts);
+      },
       onMsg: (m) => {
         const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 60;
         const li = buildLi(code, m);

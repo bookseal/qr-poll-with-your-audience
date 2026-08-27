@@ -24,7 +24,7 @@ function eventMeta(code) {
 function room(code) {
   let r = rooms.get(code);
   if (r) return r;
-  r = { clients: new Set(), messages: [], byId: new Map() };
+  r = { clients: new Set(), messages: [], byId: new Map(), votes: {} };
   const f = path.join(DATA_DIR, `${code}.jsonl`);
   if (fs.existsSync(f)) {
     for (const line of fs.readFileSync(f, "utf8").split("\n")) {
@@ -34,6 +34,9 @@ function room(code) {
         // 리액션 라인: 해당 메시지 카운트 증가
         const m = r.byId.get(o.id);
         if (m) m.reactions++;
+      } else if (o.t === "v") {
+        // 투표 라인: poll별 옵션 카운트
+        (r.votes[o.poll] ||= {})[o.opt] = (r.votes[o.poll]?.[o.opt] || 0) + 1;
       } else {
         o.reactions = o.reactions || 0;
         r.messages.push(o);
@@ -43,6 +46,22 @@ function room(code) {
   }
   rooms.set(code, r);
   return r;
+}
+
+// poll의 옵션 개수만큼 카운트 배열로 정규화
+function pollCounts(code, poll) {
+  const raw = room(code).votes[poll.id] || {};
+  return poll.options.map((_, i) => raw[i] || 0);
+}
+
+function addVote(code, poll, opt) {
+  if (opt < 0 || opt >= poll.options.length) return null;
+  const r = room(code);
+  (r.votes[poll.id] ||= {})[opt] = (r.votes[poll.id]?.[opt] || 0) + 1;
+  append(code, { t: "v", poll: poll.id, opt });
+  const counts = pollCounts(code, poll);
+  broadcast(code, { kind: "vote", poll: poll.id, counts });
+  return counts;
 }
 
 function append(code, obj) {
@@ -86,11 +105,12 @@ app.get("/present/:code", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "present.html"))
 );
 
-// 이벤트 메타 + 최근 메시지 (초기 로드용)
+// 이벤트 메타 + 최근 메시지 + poll 집계 (초기 로드용)
 app.get("/api/:code", (req, res) => {
   const meta = eventMeta(req.params.code);
   if (!meta) return res.status(404).json({ error: "unknown event code" });
-  res.json({ ...meta, messages: room(req.params.code).messages });
+  const polls = (meta.polls || []).map((p) => ({ ...p, counts: pollCounts(req.params.code, p) }));
+  res.json({ ...meta, polls, messages: room(req.params.code).messages });
 });
 
 // SSE stream
@@ -136,6 +156,17 @@ app.post("/react/:code/:id", (req, res) => {
   res.json({ id: Number(req.params.id), reactions: n });
 });
 
+// 익명 투표 (객관식 poll)
+app.post("/vote/:code/:poll/:opt", (req, res) => {
+  const meta = eventMeta(req.params.code);
+  if (!meta) return res.status(404).json({ error: "unknown event code" });
+  const poll = (meta.polls || []).find((p) => p.id === req.params.poll);
+  if (!poll) return res.status(404).json({ error: "no such poll" });
+  const counts = addVote(req.params.code, poll, Number(req.params.opt));
+  if (counts === null) return res.status(400).json({ error: "bad option" });
+  res.json({ poll: poll.id, counts });
+});
+
 // QR (참가 URL 인코딩)
 app.get("/qr/:code.svg", async (req, res) => {
   const base = `${req.headers["x-forwarded-proto"] || req.protocol}://${req.get("host")}`;
@@ -162,10 +193,17 @@ function selftest() {
   addReaction(code, 1);
   console.assert(room(code).byId.get(1).reactions === 2, "reactions counted");
   console.assert(addReaction(code, 999) === null, "react to missing msg -> null");
+  const poll = { id: "p1", q: "?", options: ["a", "b", "c"] };
+  addVote(code, poll, 0);
+  addVote(code, poll, 2);
+  addVote(code, poll, 2);
+  console.assert(addVote(code, poll, 9) === null, "out-of-range option -> null");
+  console.assert(JSON.stringify(pollCounts(code, poll)) === "[1,0,2]", "vote counts");
   rooms.delete(code); // 파일에서 다시 로드되는지 확인
   const reloaded = room(code);
   console.assert(reloaded.messages.length === 2, "reload from jsonl");
   console.assert(reloaded.byId.get(1).reactions === 2, "reactions persist across reload");
+  console.assert(JSON.stringify(pollCounts(code, poll)) === "[1,0,2]", "votes persist across reload");
   const validate = (t) => {
     t = (t ?? "").toString().trim();
     if (!t) return "empty";

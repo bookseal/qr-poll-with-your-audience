@@ -13,10 +13,10 @@ Slido를 따라가되 항상 "지금 강의에 필요한 최소"만 붙인다. �
 - 발표자 화면에서 "최신순 ↔ 인기순" 정렬 토글
 - 한글 IME 조합 중 Enter 오전송 버그 수정
 
-## Phase 2 — 객관식 Poll
-- `events/<code>.json`에 poll 정의(질문 + 옵션)
-- 참가자는 탭해서 투표, 발표자 화면에 실시간 막대 집계
-- 참고 Slido poll: `🚦 지금 내 MVP, 어디까지 왔어요?`
+## Phase 2 — 객관식 Poll (완료)
+- `events/<code>.json`의 `polls[]`에 질문 + 옵션 정의 (UI 없이 JSON)
+- 참가자는 탭해서 투표(1기기 1표, localStorage), 발표자·참가자 화면에 실시간 막대·%
+- 실제 Slido poll `🚦 지금 내 MVP, 어디까지 왔어요?` 재현
 
 ## Phase 3 — 진행 제어 / 모더레이션
 - 발표자: poll open/close, 다음/이전, 메시지 숨김·고정
