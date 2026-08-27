@@ -8,12 +8,51 @@
 </head>
 <body>
   <div class="center">
-    <form class="card" onsubmit="event.preventDefault(); location.href='/r/' + encodeURIComponent(code.value.trim())">
+    <div class="card">
       <h1>💬 QR Chat</h1>
-      <p class="count">이벤트 코드를 입력하세요.</p>
-      <input id="code" inputmode="numeric" placeholder="예: 9587463" required autofocus />
-      <button style="width:100%; margin-top:12px">입장</button>
-    </form>
+
+      <p class="count">이벤트 코드로 입장</p>
+      <form id="joinForm">
+        <input id="code" inputmode="numeric" placeholder="예: 9587463" required autofocus />
+        <button style="width:100%; margin-top:10px">입장</button>
+      </form>
+
+      <div class="or">또는</div>
+
+      <p class="count">새 이벤트 만들기</p>
+      <form id="newForm">
+        <input id="title" maxlength="80" placeholder="이벤트 제목 (예: 우리 강의 Q&amp;A)" required />
+        <button style="width:100%; margin-top:10px" class="ghost">만들기 →</button>
+      </form>
+      <p id="err" class="err"></p>
+    </div>
   </div>
+
+  <script type="module">
+    document.getElementById("joinForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      location.href = "/r/" + encodeURIComponent(code.value.trim());
+    });
+
+    const err = document.getElementById("err");
+    document.getElementById("newForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      err.textContent = "";
+      const btn = e.target.querySelector("button");
+      btn.disabled = true;
+      try {
+        const r = await fetch("/new", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: title.value.trim() }),
+        });
+        const d = await r.json();
+        if (!r.ok) { err.textContent = d.error || "생성 실패"; btn.disabled = false; return; }
+        location.href = "/present/" + d.code; // 발표자 화면(QR)로 이동
+      } catch {
+        err.textContent = "네트워크 오류"; btn.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>

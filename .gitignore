@@ -2,3 +2,7 @@ node_modules/
 data/
 *.log
 .DS_Store
+
+# 런타임 생성 이벤트는 커밋하지 않음 (seed 이벤트만 추적)
+events/*.json
+!events/9587463.json

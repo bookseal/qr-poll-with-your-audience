@@ -2,6 +2,7 @@ import express from "express";
 import qrcode from "qrcode";
 import fs from "node:fs";
 import path from "node:path";
+import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -9,8 +10,11 @@ const DATA_DIR = path.join(__dirname, "data");
 const EVENTS_DIR = path.join(__dirname, "events");
 const MAX_LEN = 500;
 const RATE_MS = 800; // ponytail: IP당 최소 간격. 분산 배포 땐 Redis로 승급.
+const MAX_EVENTS = 10; // 남용 방지: 서버가 담는 이벤트 총량 상한
+const MAX_TITLE = 80;
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
+fs.mkdirSync(EVENTS_DIR, { recursive: true });
 
 // --- in-memory rooms, jsonl로 영속 ---
 const rooms = new Map(); // code -> { clients:Set<res>, messages:[] }
@@ -19,6 +23,19 @@ function eventMeta(code) {
   const f = path.join(EVENTS_DIR, `${code}.json`);
   if (!fs.existsSync(f)) return null;
   return JSON.parse(fs.readFileSync(f, "utf8"));
+}
+
+function eventCount() {
+  return fs.readdirSync(EVENTS_DIR).filter((f) => f.endsWith(".json")).length;
+}
+
+// 7자리 숫자 코드 생성 (충돌 회피)
+function newCode() {
+  for (let i = 0; i < 50; i++) {
+    const code = String(crypto.randomInt(1000000, 10000000));
+    if (!eventMeta(code)) return code;
+  }
+  return null;
 }
 
 function room(code) {
@@ -96,7 +113,24 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const lastPost = new Map(); // ip -> ts
+const lastPost = new Map(); // ip -> ts (메시지)
+const lastNew = new Map(); // ip -> ts (이벤트 생성)
+
+// 새 이벤트 생성 (누구나 만들 수 있으나 총 MAX_EVENTS 개로 제한)
+app.post("/new", (req, res) => {
+  const ip = req.headers["cf-connecting-ip"] || req.ip;
+  if (Date.now() - (lastNew.get(ip) || 0) < 5000)
+    return res.status(429).json({ error: "잠시 후 다시 시도해주세요" });
+  const title = (req.body?.title ?? "").toString().trim().slice(0, MAX_TITLE);
+  if (!title) return res.status(400).json({ error: "제목을 입력해주세요" });
+  if (eventCount() >= MAX_EVENTS)
+    return res.status(403).json({ error: `이벤트가 가득 찼어요 (최대 ${MAX_EVENTS}개)` });
+  const code = newCode();
+  if (!code) return res.status(500).json({ error: "코드 생성 실패" });
+  fs.writeFileSync(path.join(EVENTS_DIR, `${code}.json`), JSON.stringify({ code, title }, null, 2));
+  lastNew.set(ip, Date.now());
+  res.json({ code });
+});
 
 app.get("/r/:code", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "join.html"))
@@ -204,6 +238,11 @@ function selftest() {
   console.assert(reloaded.messages.length === 2, "reload from jsonl");
   console.assert(reloaded.byId.get(1).reactions === 2, "reactions persist across reload");
   console.assert(JSON.stringify(pollCounts(code, poll)) === "[1,0,2]", "votes persist across reload");
+  const nc = newCode();
+  console.assert(/^\d{7}$/.test(nc) && !eventMeta(nc), "newCode: 7-digit, unused");
+  console.assert(typeof eventCount() === "number", "eventCount");
+  const cleanTitle = "  ".concat("x".repeat(200)).trim().slice(0, MAX_TITLE);
+  console.assert(cleanTitle.length === MAX_TITLE, "title clamped to MAX_TITLE");
   const validate = (t) => {
     t = (t ?? "").toString().trim();
     if (!t) return "empty";
