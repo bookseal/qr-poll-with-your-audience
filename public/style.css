@@ -22,9 +22,32 @@ header .code { color: var(--muted); font-size: 13px; }
   border-radius: 12px;
   padding: 12px 14px;
   margin: 8px 0;
-  white-space: pre-wrap;
-  word-break: break-word;
   animation: pop .18s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+#feed li .txt { flex: 1; white-space: pre-wrap; word-break: break-word; }
+.react {
+  flex: none;
+  background: #232732;
+  border: 1px solid #2f3441;
+  color: var(--fg);
+  padding: 6px 10px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.react:hover { border-color: var(--accent); }
+.react b { color: var(--accent); }
+.sortbtn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
 }
 @keyframes pop { from { transform: translateY(6px); opacity: 0; } }
 .composer {

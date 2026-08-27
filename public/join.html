@@ -22,21 +22,20 @@
   </div>
 
   <script type="module">
-    import { connect, send } from "/app.js";
+    import { connect, send, buildLi, setCount } from "/app.js";
     const code = location.pathname.split("/").pop();
     const feed = document.getElementById("feed");
     document.getElementById("code").textContent = code;
 
     connect(code, {
-      feed,
       onMeta: (d) => (document.getElementById("title").textContent = d.title),
-      onMessage: (m) => {
+      onMsg: (m) => {
         const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 60;
-        const li = document.createElement("li");
-        li.textContent = m.text;
+        const li = buildLi(code, m);
         feed.append(li);
         if (atBottom) li.scrollIntoView({ behavior: "smooth" });
       },
+      onReact: ({ id, reactions }) => setCount(feed, id, reactions),
     });
 
     const form = document.getElementById("form");
@@ -48,8 +47,9 @@
       text.value = "";
       if (!(await send(code, v))) text.value = v; // 실패 시 복구
     });
-    // Enter=전송, Shift+Enter=줄바꿈
+    // Enter=전송, Shift+Enter=줄바꿈. 한글 IME 조합 중 Enter는 무시(조합 확정용).
     text.addEventListener("keydown", (e) => {
+      if (e.isComposing || e.keyCode === 229) return; // IME 조합 중
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
     });
   </script>

@@ -16,29 +16,46 @@
     <main>
       <header>
         <h1 id="title">…</h1>
-        <div class="count"><span id="n">0</span> messages</div>
+        <div class="count"><span id="n">0</span> messages ·
+          <button id="sort" type="button" class="sortbtn">최신순</button>
+        </div>
       </header>
       <ul id="feed"></ul>
     </main>
   </div>
 
   <script type="module">
-    import { connect } from "/app.js";
+    import { connect, buildLi } from "/app.js";
     const code = location.pathname.split("/").pop();
     const feed = document.getElementById("feed");
     document.getElementById("code").textContent = code;
     document.getElementById("qr").src = `/qr/${encodeURIComponent(code)}.svg`;
-    let n = 0;
-    const bump = () => (document.getElementById("n").textContent = ++n);
+
+    const msgs = new Map(); // id -> {id,text,ts,reactions}
+    let sort = "recent";    // recent | top
+
+    function render() {
+      const arr = [...msgs.values()].sort(
+        sort === "top"
+          ? (a, b) => b.reactions - a.reactions || b.ts - a.ts
+          : (a, b) => b.ts - a.ts
+      );
+      feed.replaceChildren(...arr.map((m) => buildLi(code, m)));
+      document.getElementById("n").textContent = msgs.size;
+    }
+
+    document.getElementById("sort").onclick = (e) => {
+      sort = sort === "recent" ? "top" : "recent";
+      e.target.textContent = sort === "recent" ? "최신순" : "인기순 👍";
+      render();
+    };
 
     connect(code, {
-      feed,
       onMeta: (d) => (document.getElementById("title").textContent = d.title),
-      onMessage: (m) => {
-        const li = document.createElement("li");
-        li.textContent = m.text;
-        feed.prepend(li); // 최신이 위로
-        bump();
+      onMsg: (m) => { msgs.set(m.id, { ...m, reactions: m.reactions || 0 }); render(); },
+      onReact: ({ id, reactions }) => {
+        const m = msgs.get(id);
+        if (m) { m.reactions = reactions; render(); }
       },
     });
   </script>

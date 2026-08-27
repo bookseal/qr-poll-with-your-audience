@@ -24,25 +24,53 @@ function eventMeta(code) {
 function room(code) {
   let r = rooms.get(code);
   if (r) return r;
-  r = { clients: new Set(), messages: [] };
+  r = { clients: new Set(), messages: [], byId: new Map() };
   const f = path.join(DATA_DIR, `${code}.jsonl`);
   if (fs.existsSync(f)) {
     for (const line of fs.readFileSync(f, "utf8").split("\n")) {
-      if (line.trim()) r.messages.push(JSON.parse(line));
+      if (!line.trim()) continue;
+      const o = JSON.parse(line);
+      if (o.t === "r") {
+        // 리액션 라인: 해당 메시지 카운트 증가
+        const m = r.byId.get(o.id);
+        if (m) m.reactions++;
+      } else {
+        o.reactions = o.reactions || 0;
+        r.messages.push(o);
+        r.byId.set(o.id, o);
+      }
     }
   }
   rooms.set(code, r);
   return r;
 }
 
+function append(code, obj) {
+  fs.appendFileSync(path.join(DATA_DIR, `${code}.jsonl`), JSON.stringify(obj) + "\n");
+}
+
+function broadcast(code, obj) {
+  const payload = `data: ${JSON.stringify(obj)}\n\n`;
+  for (const res of room(code).clients) res.write(payload);
+}
+
 function addMessage(code, text) {
-  const msg = { id: room(code).messages.length + 1, text, ts: Date.now() };
   const r = room(code);
+  const msg = { id: r.messages.length + 1, text, ts: Date.now(), reactions: 0 };
   r.messages.push(msg);
-  fs.appendFileSync(path.join(DATA_DIR, `${code}.jsonl`), JSON.stringify(msg) + "\n");
-  const payload = `data: ${JSON.stringify(msg)}\n\n`;
-  for (const res of r.clients) res.write(payload);
+  r.byId.set(msg.id, msg);
+  append(code, { id: msg.id, text: msg.text, ts: msg.ts });
+  broadcast(code, { kind: "msg", ...msg });
   return msg;
+}
+
+function addReaction(code, id) {
+  const m = room(code).byId.get(id);
+  if (!m) return null;
+  m.reactions++;
+  append(code, { t: "r", id });
+  broadcast(code, { kind: "react", id, reactions: m.reactions });
+  return m.reactions;
 }
 
 const app = express();
@@ -99,6 +127,15 @@ app.post("/msg/:code", (req, res) => {
   res.json(addMessage(req.params.code, text));
 });
 
+// 익명 리액션 (👍) — 계정 없으니 탭 카운터, Slido "반응"과 동일
+app.post("/react/:code/:id", (req, res) => {
+  if (!eventMeta(req.params.code))
+    return res.status(404).json({ error: "unknown event code" });
+  const n = addReaction(req.params.code, Number(req.params.id));
+  if (n === null) return res.status(404).json({ error: "no such message" });
+  res.json({ id: Number(req.params.id), reactions: n });
+});
+
 // QR (참가 URL 인코딩)
 app.get("/qr/:code.svg", async (req, res) => {
   const base = `${req.headers["x-forwarded-proto"] || req.protocol}://${req.get("host")}`;
@@ -121,8 +158,14 @@ function selftest() {
   const a = addMessage(code, "hello");
   console.assert(a.id === 1 && a.text === "hello", "first message");
   addMessage(code, "world");
+  addReaction(code, 1);
+  addReaction(code, 1);
+  console.assert(room(code).byId.get(1).reactions === 2, "reactions counted");
+  console.assert(addReaction(code, 999) === null, "react to missing msg -> null");
   rooms.delete(code); // 파일에서 다시 로드되는지 확인
-  console.assert(room(code).messages.length === 2, "reload from jsonl");
+  const reloaded = room(code);
+  console.assert(reloaded.messages.length === 2, "reload from jsonl");
+  console.assert(reloaded.byId.get(1).reactions === 2, "reactions persist across reload");
   const validate = (t) => {
     t = (t ?? "").toString().trim();
     if (!t) return "empty";
