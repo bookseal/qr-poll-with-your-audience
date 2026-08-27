@@ -1,0 +1,8 @@
+# /etc/cloudflared/config.yml — Cloudflare Tunnel ingress
+# <TUNNEL_ID> 는 `cloudflared tunnel create qr-chat` 출력값으로 치환.
+tunnel: <TUNNEL_ID>
+credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
+ingress:
+  - hostname: qr-chat.physical-spark.com
+    service: http://localhost:3000
+  - service: http_status:404
