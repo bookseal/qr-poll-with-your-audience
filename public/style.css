@@ -62,10 +62,10 @@ header .code { color: var(--muted); font-size: 13px; }
 .tab.active { background: var(--accent); border-color: var(--accent); }
 .tab:disabled { opacity: .45; cursor: not-allowed; }
 .poll-hint { color: var(--muted); margin: 0; }
-.admin-tabs { display: flex; gap: 8px; margin: 14px 0; padding: 4px; background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; }
-.admin-tab { flex: 1; background: transparent; color: var(--muted); border-radius: 10px; padding: 10px 14px; }
-.admin-tab.active { background: var(--card); color: var(--fg); box-shadow: 0 3px 10px var(--shadow); }
-.admin-tab b { display: inline-grid; place-items: center; min-width: 19px; height: 19px; margin-left: 4px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11px; }
+.admin-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.admin-tab { background: var(--bg2); border: 1px solid var(--line); color: var(--fg); border-radius: 999px; padding: 8px 12px; }
+.admin-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.unread-label { display: inline-block; margin-left: 5px; padding: 2px 7px; border-radius: 999px; background: var(--gold); color: var(--fg); font-size: 11px; font-weight: 800; }
 .chat-toggle {
   position: fixed; top: 18px; right: 18px; z-index: 20;
   border-radius: 999px; padding: 11px 16px; background: var(--accent); color: #fff;

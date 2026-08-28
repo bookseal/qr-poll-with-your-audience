@@ -19,7 +19,7 @@
 
     <nav class="admin-tabs" aria-label="Presenter views">
       <button id="pollsTab" class="admin-tab active" type="button">Polls</button>
-      <button id="chatTab" class="admin-tab" type="button">💬 Chat Room <b id="chatBadge" hidden>0</b></button>
+      <button id="chatTab" class="admin-tab" type="button">💬 Chat Room <span id="chatBadge" class="unread-label" hidden>Unread messages</span></button>
     </nav>
 
     <section id="pollsPanel" class="panel">
@@ -200,7 +200,7 @@
       },
       onMsg: (m) => {
         msgs.set(m.id, { reactions: 0, pinned: false, ...m }); renderMessages();
-        if ((m.pollId || "qa") === "qa" && !chatView) { unreadChat++; chatBadge.textContent = unreadChat; chatBadge.hidden = false; }
+        if ((m.pollId || "qa") === "qa" && !chatView) { unreadChat++; chatBadge.hidden = false; }
       },
       onReact: ({ id, reactions }) => { const m = msgs.get(id); if (m) { m.reactions = reactions; renderMessages(); } },
       onDel: ({ id }) => { msgs.delete(id); renderMessages(); },
