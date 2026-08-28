@@ -189,7 +189,12 @@ function addVote(code, poll, opt, token = "") {
   const r = room(code);
   if (token) {
     const voters = (r.voters[poll.id] ||= {});
-    if (voters[token] !== undefined) return pollCounts(code, poll);
+    if (voters[token] !== undefined) {
+      const previous = voters[token];
+      if (previous === opt) return pollCounts(code, poll);
+      if (r.votes[poll.id]?.[previous] > 0) r.votes[poll.id][previous]--;
+      append(code, { t: "uv", poll: poll.id, token });
+    }
     voters[token] = opt;
   }
   (r.votes[poll.id] ||= {})[opt] = (r.votes[poll.id]?.[opt] || 0) + 1;

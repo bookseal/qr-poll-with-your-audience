@@ -156,9 +156,9 @@ export function renderPoll(code, poll, interactive) {
           vote(code, poll.id, i, true);
           return;
         }
-        if (current !== null) return; // 1기기 1표
         localStorage.setItem(votedKey, i);
         wrap.querySelectorAll(".opt").forEach((o) => o.classList.add("voted"));
+        wrap.querySelectorAll(".opt").forEach((o) => o.classList.remove("mine"));
         row.classList.add("mine");
         vote(code, poll.id, i);
       };
