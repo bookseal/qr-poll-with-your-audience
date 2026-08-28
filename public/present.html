@@ -40,12 +40,9 @@
     function render() {
       if (stage.focus === "wall" || stage.focus === "qa") {
         pollbox.hidden = true;
-        feed.hidden = false;
-        const arr = sortMessages([...msgs.values()], stage.sort);
-        feed.replaceChildren(...arr.map((m) => buildLi(code, m)));
-        const qaMsgs = [...msgs.values()].filter((m) => m.pollId === "qa");
-        feed.replaceChildren(...sortMessages(qaMsgs, stage.sort).map((m) => buildLi(code, m)));
-        sub.textContent = `${qaMsgs.length} Chat Room · ${stage.sort === "top" ? "Popular" : "Recent"}`;
+        feed.hidden = true;
+        feed.replaceChildren();
+        sub.textContent = "";
       } else {
         feed.hidden = true;
         pollbox.hidden = false;

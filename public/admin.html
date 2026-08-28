@@ -85,8 +85,8 @@
     document.getElementById("pollsTab").onclick = () => setView(false);
     chatTab.onclick = () => setView(true);
 
-    const stages = () => ["qa", ...pollOrder];
-    const label = (f) => (f === "qa" || f === "wall" ? "💬" : (polls.get(f)?.q || f));
+    const stages = () => [...pollOrder];
+    const label = (f) => polls.get(f)?.q || f;
 
     function renderSidebar() {
       sidebarItems.replaceChildren(...stages().map((f) => {
@@ -95,12 +95,12 @@
         const name = document.createElement("span");
         name.className = "sidebar-item-label";
         name.textContent = label(f);
-        name.title = f === "qa" ? "Chat Room" : (polls.get(f)?.q || f);
+        name.title = polls.get(f)?.q || f;
         const play = document.createElement("button");
         play.type = "button"; play.className = "mini play"; play.textContent = "▶";
         play.title = "Show on audience and projector";
         play.setAttribute("aria-label", `Show ${name.title} on audience and projector`);
-        play.onclick = () => { setView(f === "qa"); setStage(f); };
+        play.onclick = () => { setView(false); setStage(f); };
         row.append(name, play);
         return row;
       }));
