@@ -68,10 +68,13 @@ header .code { color: var(--muted); font-size: 13px; }
 .unread-label { display: inline-block; margin-left: 5px; padding: 2px 7px; border-radius: 999px; background: var(--gold); color: var(--fg); font-size: 11px; font-weight: 800; }
 .chat-toggle {
   position: fixed; top: 18px; right: 18px; z-index: 20;
-  border-radius: 999px; padding: 11px 16px; background: var(--accent); color: #fff;
-  box-shadow: 0 7px 20px var(--shadow); font-weight: 800;
+  width: 52px; height: 52px; padding: 0; border-radius: 50%; background: #2f9e5b; color: #fff;
+  box-shadow: 0 7px 20px var(--shadow); font-weight: 800; font-size: 20px;
 }
-.chat-toggle b { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-left: 5px; padding: 0 5px; border-radius: 999px; background: var(--gold); color: var(--fg); font-size: 11px; }
+.chat-toggle b { display: inline-grid; place-items: center; min-width: 17px; height: 17px; margin-left: 2px; padding: 0 4px; border-radius: 999px; background: #fff; color: #2f9e5b; font-size: 10px; vertical-align: top; }
+.chat-toggle.has-unread { background: var(--accent); animation: unread-blink 1s ease-in-out infinite; }
+.chat-toggle.has-unread b { color: var(--accent); }
+@keyframes unread-blink { 0%, 100% { opacity: 1; } 50% { opacity: .38; } }
 .chat-panel {
   position: fixed; top: 18px; right: 18px; z-index: 30; width: min(380px, calc(100vw - 36px));
   max-height: calc(100dvh - 36px); display: flex; flex-direction: column;
@@ -228,5 +231,5 @@ button.ghost.small, button.small { font-size: 13px; padding: 8px 12px; }
 .mini.danger:hover { border-color: #e5484d; color: #e5484d; }
 .poll-controls { display: flex; gap: 6px; margin-top: 8px; }
 @media (max-width: 620px) { .pollform { grid-template-columns: 1fr 1fr; } .pollform button { grid-column: 1 / -1; } }
-@media (max-width: 620px) { .chat-toggle { top: 12px; right: 12px; width: 48px; height: 48px; padding: 0; border-radius: 50%; font-size: 0; } .chat-toggle:first-letter { font-size: 20px; } .chat-toggle b { position: absolute; top: -4px; right: -4px; } .chat-panel { top: 12px; right: 12px; width: calc(100vw - 24px); max-height: calc(100dvh - 24px); } }
+@media (max-width: 620px) { .chat-toggle { top: 12px; right: 12px; width: 48px; height: 48px; } .chat-toggle b { position: absolute; top: -4px; right: -4px; } .chat-panel { top: 12px; right: 12px; width: calc(100vw - 24px); max-height: calc(100dvh - 24px); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

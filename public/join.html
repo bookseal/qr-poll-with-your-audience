@@ -16,7 +16,7 @@
     <div id="pollbox"></div>
     <ul id="feed"></ul>
   </div>
-  <button id="chatToggle" class="chat-toggle" type="button" aria-expanded="false">💬 <span>Chat Room</span><b id="chatBadge" hidden>0</b></button>
+  <button id="chatToggle" class="chat-toggle" type="button" aria-expanded="false" aria-label="Open Chat Room">💬 <b id="chatBadge">0</b></button>
   <aside id="chatPanel" class="chat-panel" hidden aria-label="Chat Room">
     <div class="chat-head"><div><strong>Chat Room</strong><small>Open conversation</small></div><button id="chatClose" class="chat-close" type="button" aria-label="Close Chat Room">×</button></div>
     <ul id="chatFeed" class="chat-feed"></ul>
@@ -63,7 +63,7 @@
     function renderChat() {
       const list = [...msgs.values()].filter((m) => (m.pollId || "qa") === "qa");
       chatFeed.replaceChildren(...list.map((m) => buildLi(code, m)));
-      if (chatOpen) { unreadChat = 0; chatBadge.hidden = true; }
+      if (chatOpen) { unreadChat = 0; chatBadge.textContent = "0"; chatBadge.hidden = false; chatToggle.classList.remove("has-unread"); }
     }
 
     function setChat(open) {
@@ -114,7 +114,7 @@
           const li = buildLi(code, m); feed.append(li);
           if (atBottom) li.scrollIntoView({ behavior: "smooth" });
         }
-        if ((m.pollId || "qa") === "qa" && !chatOpen) { unreadChat++; chatBadge.textContent = unreadChat; chatBadge.hidden = false; }
+        if ((m.pollId || "qa") === "qa" && !chatOpen) { unreadChat++; chatBadge.textContent = unreadChat; chatBadge.hidden = false; chatToggle.classList.add("has-unread"); }
         renderChat();
       },
       onReact: ({ id, reactions }) => { setCount(feed, id, reactions); setCount(chatFeed, id, reactions); },
