@@ -16,7 +16,7 @@
     <div id="pollbox"></div>
     <ul id="feed"></ul>
   </div>
-  <a id="chatToggle" class="chat-toggle" aria-label="Open Chat Room">💬 <b id="chatBadge">0</b></a>
+  <a id="chatToggle" class="chat-toggle" aria-label="Open Chat Room">Chat Room</a>
   <aside id="chatPanel" class="chat-panel" hidden aria-label="Chat Room">
     <div class="chat-head"><div><strong>Chat Room</strong><small>Open conversation</small></div><a id="chatClose" class="chat-close" aria-label="Back to polls" href="#">×</a></div>
     <ul id="chatFeed" class="chat-feed"></ul>
@@ -41,7 +41,6 @@
     const chatPanel = document.getElementById("chatPanel");
     const chatToggle = document.getElementById("chatToggle");
     const chatFeed = document.getElementById("chatFeed");
-    const chatBadge = document.getElementById("chatBadge");
     const chatReadKey = `qr-chat:chat-read:${code}`;
     const markChatRead = () => localStorage.setItem(chatReadKey, String(Date.now()));
     document.body.classList.toggle("chat-page", chatMode);
@@ -65,7 +64,7 @@
     function renderChat() {
       const list = [...msgs.values()].filter((m) => (m.pollId || "qa") === "qa");
       chatFeed.replaceChildren(...list.map((m) => buildLi(code, m)));
-      if (chatOpen) { unreadChat = 0; chatBadge.textContent = "0"; chatBadge.hidden = false; chatToggle.classList.remove("has-unread"); }
+      if (chatOpen) { unreadChat = 0; chatToggle.classList.remove("has-unread"); }
     }
 
     function setChat(open) {
@@ -113,7 +112,7 @@
           if (atBottom) li.scrollIntoView({ behavior: "smooth" });
         }
         const lastRead = Number(localStorage.getItem(chatReadKey) || 0);
-        if ((m.pollId || "qa") === "qa" && !chatOpen && m.ts > lastRead) { unreadChat++; chatBadge.textContent = unreadChat; chatBadge.hidden = false; chatToggle.classList.add("has-unread"); }
+        if ((m.pollId || "qa") === "qa" && !chatOpen && m.ts > lastRead) { unreadChat++; chatToggle.classList.add("has-unread"); }
         renderChat();
       },
       onReact: ({ id, reactions }) => { setCount(feed, id, reactions); setCount(chatFeed, id, reactions); },
