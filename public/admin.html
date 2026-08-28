@@ -17,7 +17,12 @@
       <p id="warn" class="err"></p>
     </header>
 
-    <section class="panel">
+    <nav class="admin-tabs" aria-label="Presenter views">
+      <button id="pollsTab" class="admin-tab active" type="button">Polls</button>
+      <button id="chatTab" class="admin-tab" type="button">💬 Chat Room <b id="chatBadge" hidden>0</b></button>
+    </nav>
+
+    <section id="pollsPanel" class="panel">
       <div class="panel-title">Now on projector</div>
       <div id="stagebar" class="stagebar"></div>
       <div class="stage-nav">
@@ -39,8 +44,8 @@
       <div id="polls"></div>
     </section>
 
-    <section class="panel">
-      <div class="panel-title">Responses <span id="mcount" class="count"></span></div>
+    <section id="chatPanel" class="panel" hidden>
+      <div class="panel-title">Chat Room <span id="mcount" class="count"></span></div>
       <ul id="feed" class="adminfeed"></ul>
     </section>
   </div>
@@ -58,12 +63,30 @@
       "⚠️ The admin key is missing from this URL. Controls will be disabled.";
 
     const feed = document.getElementById("feed");
+    const pollsPanel = document.getElementById("pollsPanel");
+    const chatPanel = document.getElementById("chatPanel");
+    const chatTab = document.getElementById("chatTab");
+    const chatBadge = document.getElementById("chatBadge");
     const pollsEl = document.getElementById("polls");
     const stagebar = document.getElementById("stagebar");
     const msgs = new Map();
     const polls = new Map();
     let pollOrder = [];        // poll id 순서
     let stage = { focus: "qa", sort: "recent" };
+    let chatView = false;
+    let unreadChat = 0;
+
+    function setView(chat) {
+      chatView = chat;
+      pollsPanel.hidden = chat;
+      chatPanel.hidden = !chat;
+      document.getElementById("pollsTab").classList.toggle("active", !chat);
+      chatTab.classList.toggle("active", chat);
+      if (chat) { unreadChat = 0; chatBadge.hidden = true; }
+    }
+
+    document.getElementById("pollsTab").onclick = () => setView(false);
+    chatTab.onclick = () => setView(true);
 
     const stages = () => ["qa", ...pollOrder];
     const label = (f) => (f === "qa" || f === "wall" ? "💬 Chat Room" : (polls.get(f)?.q || f));
@@ -175,7 +198,10 @@
         if (d.stage) stage = d.stage;
         renderStageBar(); renderPolls(); renderMessages();
       },
-      onMsg: (m) => { msgs.set(m.id, { reactions: 0, pinned: false, ...m }); renderMessages(); },
+      onMsg: (m) => {
+        msgs.set(m.id, { reactions: 0, pinned: false, ...m }); renderMessages();
+        if ((m.pollId || "qa") === "qa" && !chatView) { unreadChat++; chatBadge.textContent = unreadChat; chatBadge.hidden = false; }
+      },
       onReact: ({ id, reactions }) => { const m = msgs.get(id); if (m) { m.reactions = reactions; renderMessages(); } },
       onDel: ({ id }) => { msgs.delete(id); renderMessages(); },
       onPin: ({ id, on }) => { const m = msgs.get(id); if (m) { m.pinned = on; renderMessages(); } },
