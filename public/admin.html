@@ -79,6 +79,7 @@
       document.getElementById("pollsTab").classList.toggle("active", !chat);
       chatTab.classList.toggle("active", chat);
       if (chat) { unreadChat = 0; chatBadge.hidden = true; }
+      renderMessages();
     }
 
     document.getElementById("pollsTab").onclick = () => setView(false);
@@ -138,7 +139,7 @@
     }
 
     function renderMessages() {
-      const pollId = stage.focus === "wall" ? "qa" : stage.focus;
+      const pollId = chatView || stage.focus === "wall" ? "qa" : stage.focus;
       const arr = sortMessages([...msgs.values()].filter((m) => (m.pollId || "qa") === pollId), stage.sort);
       feed.replaceChildren(...arr.map(msgRow));
       document.getElementById("mcount").textContent = `(${msgs.size})`;
