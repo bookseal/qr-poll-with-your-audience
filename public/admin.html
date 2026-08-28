@@ -21,7 +21,7 @@
       <aside class="admin-sidebar" aria-label="Presenter navigation">
         <div class="sidebar-label">Views</div>
         <button id="pollsTab" class="admin-tab active" type="button">Polls</button>
-        <button id="chatTab" class="admin-tab" type="button" aria-label="Open chat room">💬 <span id="chatBadge" class="unread-label" hidden></span></button>
+        <button id="chatTab" class="admin-tab" type="button" aria-label="Open chat room">Chat Room <span id="chatBadge" class="unread-label" hidden></span></button>
         <div class="sidebar-label">Show on screen</div>
         <div id="sidebarItems" class="sidebar-items"></div>
       </aside>
@@ -39,7 +39,7 @@
         </section>
 
         <section id="chatPanel" class="panel" hidden>
-          <div class="panel-title">💬 <span id="mcount" class="count"></span><button id="archiveToggle" class="mini" type="button">Show archived</button></div>
+          <div class="panel-title">Chat Room <span id="mcount" class="count"></span><button id="archiveToggle" class="mini" type="button">Show archived</button></div>
           <ul id="feed" class="adminfeed"></ul>
         </section>
       </main>
@@ -64,6 +64,7 @@
     const chatTab = document.getElementById("chatTab");
     const chatBadge = document.getElementById("chatBadge");
     const sidebarItems = document.getElementById("sidebarItems");
+    const adminChatReadKey = `qr-chat:admin-chat-read:${code}`;
     const pollsEl = document.getElementById("polls");
     const msgs = new Map();
     const polls = new Map();
@@ -79,7 +80,11 @@
       chatPanel.hidden = !chat;
       document.getElementById("pollsTab").classList.toggle("active", !chat);
       chatTab.classList.toggle("active", chat);
-      if (chat) { unreadChat = 0; chatBadge.hidden = true; }
+      if (chat) {
+        unreadChat = 0;
+        chatBadge.hidden = true;
+        localStorage.setItem(adminChatReadKey, String(Date.now()));
+      }
       renderMessages();
     }
 
@@ -198,7 +203,8 @@
       },
       onMsg: (m) => {
         msgs.set(m.id, { reactions: 0, pinned: false, ...m }); renderMessages();
-        if ((m.pollId || "qa") === "qa" && !chatView) { unreadChat++; chatBadge.textContent = unreadChat; chatBadge.hidden = false; }
+        const lastRead = Number(localStorage.getItem(adminChatReadKey) || 0);
+        if ((m.pollId || "qa") === "qa" && !chatView && m.ts > lastRead) { unreadChat++; chatBadge.textContent = unreadChat; chatBadge.hidden = false; }
       },
       onReact: ({ id, reactions }) => { const m = msgs.get(id); if (m) { m.reactions = reactions; renderMessages(); } },
       onDel: ({ id }) => { const m = msgs.get(id); if (m) m.deleted = true; renderMessages(); },
