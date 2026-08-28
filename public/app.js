@@ -117,7 +117,7 @@ export function renderPoll(code, poll, interactive) {
   if (poll.type === "text") {
     const hint = document.createElement("p");
     hint.className = "poll-hint";
-    hint.textContent = interactive ? "Use the input below to respond anonymously." : `${poll.responseCount || 0} responses`;
+    hint.textContent = interactive ? "Anonymous messages appear here." : `${poll.responseCount || 0} messages`;
     wrap.append(hint);
     return wrap;
   }
