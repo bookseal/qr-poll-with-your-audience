@@ -42,11 +42,14 @@
     const chatToggle = document.getElementById("chatToggle");
     const chatFeed = document.getElementById("chatFeed");
     const chatBadge = document.getElementById("chatBadge");
+    const chatReadKey = `qr-chat:chat-read:${code}`;
+    const markChatRead = () => localStorage.setItem(chatReadKey, String(Date.now()));
     document.body.classList.toggle("chat-page", chatMode);
     chatToggle.href = `/r/${encodeURIComponent(code)}/chat`;
     chatClose.href = `/r/${encodeURIComponent(code)}`;
     chatToggle.hidden = chatMode;
     chatPanel.hidden = !chatMode;
+    chatToggle.addEventListener("click", markChatRead);
 
     function tabs() {
       const items = [...polls.values()];
@@ -109,7 +112,8 @@
           const li = buildLi(code, m); feed.append(li);
           if (atBottom) li.scrollIntoView({ behavior: "smooth" });
         }
-        if ((m.pollId || "qa") === "qa" && !chatOpen) { unreadChat++; chatBadge.textContent = unreadChat; chatBadge.hidden = false; chatToggle.classList.add("has-unread"); }
+        const lastRead = Number(localStorage.getItem(chatReadKey) || 0);
+        if ((m.pollId || "qa") === "qa" && !chatOpen && m.ts > lastRead) { unreadChat++; chatBadge.textContent = unreadChat; chatBadge.hidden = false; chatToggle.classList.add("has-unread"); }
         renderChat();
       },
       onReact: ({ id, reactions }) => { setCount(feed, id, reactions); setCount(chatFeed, id, reactions); },
