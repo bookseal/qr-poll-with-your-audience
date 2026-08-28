@@ -87,7 +87,7 @@
     chatTab.onclick = () => setView(true);
     document.getElementById("archiveToggle").onclick = () => {
       showArchived = !showArchived;
-      document.getElementById("archiveToggle").textContent = showArchived ? "Show active" : "Show archived";
+      document.getElementById("archiveToggle").textContent = showArchived ? "Back to active" : "Show archived";
       renderMessages();
     };
 
@@ -138,9 +138,8 @@
       pin.textContent = m.pinned ? "Unpin" : "Pin";
       pin.onclick = () => adminAction(code, key, `pin/${m.id}`, { on: !m.pinned });
       const del = document.createElement("button"); del.type = "button"; del.className = "mini danger";
-      del.textContent = m.deleted ? "Archived" : "Archive";
-      del.disabled = m.deleted;
-      del.onclick = () => { if (confirm("Archive this message?")) adminAction(code, key, `archive/${m.id}`); };
+      del.textContent = m.deleted ? "Restore" : "Archive";
+      del.onclick = () => adminAction(code, key, `${m.deleted ? "restore" : "archive"}/${m.id}`);
       meta.append(cnt, pin, del);
       li.append(txt, meta);
       return li;
@@ -203,6 +202,7 @@
       },
       onReact: ({ id, reactions }) => { const m = msgs.get(id); if (m) { m.reactions = reactions; renderMessages(); } },
       onDel: ({ id }) => { const m = msgs.get(id); if (m) m.deleted = true; renderMessages(); },
+      onRestore: ({ id }) => { const m = msgs.get(id); if (m) m.deleted = false; renderMessages(); },
       onPin: ({ id, on }) => { const m = msgs.get(id); if (m) { m.pinned = on; renderMessages(); } },
       onVote: ({ poll, counts }) => {
         const p = polls.get(poll); if (p) p.counts = counts;

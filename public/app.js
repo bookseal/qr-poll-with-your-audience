@@ -3,7 +3,7 @@ export const esc = encodeURIComponent;
 
 // code의 메타+기존 메시지 로드, 이후 SSE로 신규/리액션 수신.
 // onMsg(m): 메시지(초기 로드분 + 신규), onReact({id,reactions}): 리액션 갱신
-export async function connect(code, { onMeta, onMsg, onReact, onVote, onDel, onPin, onStage, onPolls } = {}) {
+export async function connect(code, { onMeta, onMsg, onReact, onVote, onDel, onRestore, onPin, onStage, onPolls } = {}) {
   const r = await fetch(`/api/${esc(code)}`);
   if (!r.ok) {
     document.body.innerHTML = `<div class="center"><div class="card"><h1>Event not found</h1><p>We could not find event code <b>${code}</b>.</p><a href="/">← Back home</a></div></div>`;
@@ -19,6 +19,7 @@ export async function connect(code, { onMeta, onMsg, onReact, onVote, onDel, onP
     if (o.kind === "react") onReact?.(o);
     else if (o.kind === "vote") onVote?.(o);
     else if (o.kind === "del") onDel?.(o);
+    else if (o.kind === "restore") onRestore?.(o);
     else if (o.kind === "pin") onPin?.(o);
     else if (o.kind === "stage") onStage?.(o);
     else if (o.kind === "polls") onPolls?.(o.polls);

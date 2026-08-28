@@ -97,6 +97,9 @@ function room(code) {
       } else if (o.t === "d") {
         const m = r.byId.get(o.id);
         if (m) m.deleted = true;
+      } else if (o.t === "u") {
+        const m = r.byId.get(o.id);
+        if (m) m.deleted = false;
       } else if (o.t === "p") {
         const m = r.byId.get(o.id);
         if (m) m.pinned = o.on;
@@ -129,6 +132,15 @@ function delMessage(code, id) {
   m.deleted = true;
   append(code, { t: "d", id });
   broadcast(code, { kind: "del", id });
+  return true;
+}
+
+function restoreMessage(code, id) {
+  const m = room(code).byId.get(id);
+  if (!m || !m.deleted) return false;
+  m.deleted = false;
+  append(code, { t: "u", id });
+  broadcast(code, { kind: "restore", id });
   return true;
 }
 
@@ -352,6 +364,14 @@ app.post("/admin/:code/archive/:id", (req, res) => {
   if (!meta) return res.status(404).json({ error: "unknown event code" });
   if (!keyOk(meta, req)) return res.status(403).json({ error: "An admin key is required." });
   const ok = delMessage(req.params.code, Number(req.params.id));
+  res.json({ ok });
+});
+
+app.post("/admin/:code/restore/:id", (req, res) => {
+  const meta = eventMeta(req.params.code);
+  if (!meta) return res.status(404).json({ error: "unknown event code" });
+  if (!keyOk(meta, req)) return res.status(403).json({ error: "An admin key is required." });
+  const ok = restoreMessage(req.params.code, Number(req.params.id));
   res.json({ ok });
 });
 
