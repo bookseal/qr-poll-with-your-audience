@@ -24,7 +24,7 @@
   </div>
 
   <script type="module">
-    import { connect, buildLi, renderPoll, updatePoll, sortMessages } from "/app.js?v=4";
+    import { connect, buildLi, renderPoll, updatePoll, sortMessages } from "/app.js?v=5";
     const code = location.pathname.split("/").pop();
     const feed = document.getElementById("feed");
     const pollbox = document.getElementById("pollbox");
@@ -34,23 +34,33 @@
 
     const msgs = new Map();
     const polls = new Map();
-    let stage = { focus: "wall", sort: "recent" };
+    let stage = { focus: "qa", sort: "recent" };
+    const qa = { id: "qa", q: "청중 Q&A", type: "text", sort: "recent" };
 
     function render() {
-      if (stage.focus === "wall") {
+      if (stage.focus === "wall" || stage.focus === "qa") {
         pollbox.hidden = true;
         feed.hidden = false;
         const arr = sortMessages([...msgs.values()], stage.sort);
         feed.replaceChildren(...arr.map((m) => buildLi(code, m)));
-        sub.textContent = `${msgs.size} messages · ${stage.sort === "top" ? "인기순" : "최신순"}`;
+        const qaMsgs = [...msgs.values()].filter((m) => m.pollId === "qa");
+        feed.replaceChildren(...sortMessages(qaMsgs, stage.sort).map((m) => buildLi(code, m)));
+        sub.textContent = `${qaMsgs.length} Q&A · ${stage.sort === "top" ? "인기순" : "최신순"}`;
       } else {
         feed.hidden = true;
         pollbox.hidden = false;
         const p = polls.get(stage.focus);
         if (p) {
           pollbox.replaceChildren(renderPoll(code, p, false));
-          const total = (p.counts || []).reduce((a, b) => a + b, 0);
-          sub.textContent = `${total} votes`;
+          if (p.type === "text") {
+            const list = [...msgs.values()].filter((m) => m.pollId === p.id);
+            feed.hidden = false;
+            feed.replaceChildren(...sortMessages(list, p.sort).map((m) => buildLi(code, m)));
+            sub.textContent = `${list.length} responses · ${p.sort === "top" ? "인기순" : "최신순"}`;
+          } else {
+            const total = (p.counts || []).reduce((a, b) => a + b, 0);
+            sub.textContent = `${total} votes`;
+          }
         }
       }
     }
@@ -62,7 +72,7 @@
         if (d.stage) stage = d.stage;
         render();
       },
-      onMsg: (m) => { msgs.set(m.id, { reactions: 0, pinned: false, ...m }); render(); },
+      onMsg: (m) => { msgs.set(m.id, { reactions: 0, pinned: false, pollId: "qa", ...m }); render(); },
       onReact: ({ id, reactions }) => { const m = msgs.get(id); if (m) { m.reactions = reactions; render(); } },
       onDel: ({ id }) => { msgs.delete(id); render(); },
       onPin: ({ id, on }) => { const m = msgs.get(id); if (m) { m.pinned = on; render(); } },
@@ -74,6 +84,7 @@
         }
       },
       onStage: (s) => { stage = { focus: s.focus, sort: s.sort }; render(); },
+      onPolls: (items) => { polls.clear(); items.forEach((p) => polls.set(p.id, p)); render(); },
     });
   </script>
 </body>

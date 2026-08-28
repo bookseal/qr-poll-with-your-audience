@@ -12,6 +12,10 @@ const MAX_LEN = 500;
 const RATE_MS = 800; // ponytail: IP당 최소 간격. 분산 배포 땐 Redis로 승급.
 const MAX_EVENTS = 10; // 남용 방지: 서버가 담는 이벤트 총량 상한
 const MAX_TITLE = 80;
+const MAX_POLL_TITLE = 160;
+const MAX_OPTIONS = 8;
+const MAX_OPTION_LEN = 80;
+const QA_ID = "qa";
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(EVENTS_DIR, { recursive: true });
@@ -23,6 +27,31 @@ function eventMeta(code) {
   const f = path.join(EVENTS_DIR, `${code}.json`);
   if (!fs.existsSync(f)) return null;
   return JSON.parse(fs.readFileSync(f, "utf8"));
+}
+
+function normalizePoll(p, i) {
+  const type = p.type === "text" ? "text" : "choice";
+  return {
+    ...p,
+    id: String(p.id),
+    type,
+    q: String(p.q || "").trim().slice(0, MAX_POLL_TITLE),
+    ...(type === "choice" ? { options: (p.options || []).map(String).slice(0, MAX_OPTIONS) } : { options: [] }),
+    sort: p.sort === "top" ? "top" : "recent",
+    order: Number.isInteger(p.order) ? p.order : i,
+  };
+}
+
+function normalizeMeta(meta) {
+  const polls = (meta.polls || []).map(normalizePoll);
+  polls.forEach((p, i) => { p.order = i; });
+  return { ...meta, polls, qaSort: meta.qaSort === "top" ? "top" : "recent" };
+}
+
+function saveMeta(code, meta) {
+  const clean = normalizeMeta(meta);
+  fs.writeFileSync(path.join(EVENTS_DIR, `${code}.json`), JSON.stringify(clean, null, 2) + "\n");
+  return clean;
 }
 
 function eventCount() {
@@ -42,7 +71,8 @@ function room(code) {
   let r = rooms.get(code);
   if (r) return r;
   // stage: 강사가 프로젝터에 무엇을 어떻게 띄울지 (라이브 상태, 영속 안 함)
-  r = { clients: new Set(), messages: [], byId: new Map(), votes: {}, stage: { focus: "wall", sort: "recent" } };
+  const meta = eventMeta(code);
+  r = { clients: new Set(), messages: [], byId: new Map(), votes: {}, stage: { focus: QA_ID, sort: meta?.qaSort || "recent" } };
   const f = path.join(DATA_DIR, `${code}.jsonl`);
   if (fs.existsSync(f)) {
     for (const line of fs.readFileSync(f, "utf8").split("\n")) {
@@ -62,6 +92,7 @@ function room(code) {
         const m = r.byId.get(o.id);
         if (m) m.pinned = o.on;
       } else {
+        o.pollId = o.pollId || QA_ID;
         o.reactions = o.reactions || 0;
         o.deleted = false;
         o.pinned = false;
@@ -77,6 +108,10 @@ function room(code) {
 // 삭제 안 된 메시지만 (모든 화면 공통 노출 집합)
 function visibleMessages(code) {
   return room(code).messages.filter((m) => !m.deleted);
+}
+
+function visibleMessagesFor(code, pollId) {
+  return visibleMessages(code).filter((m) => m.pollId === pollId);
 }
 
 function delMessage(code, id) {
@@ -100,6 +135,13 @@ function pinMessage(code, id, on) {
 function setStage(code, focus, sort) {
   const r = room(code);
   r.stage = { focus, sort };
+  const meta = normalizeMeta(eventMeta(code));
+  if (focus === QA_ID) meta.qaSort = sort;
+  else {
+    const p = meta.polls.find((item) => item.id === focus);
+    if (p) p.sort = sort;
+  }
+  saveMeta(code, meta);
   broadcast(code, { kind: "stage", ...r.stage });
   return r.stage;
 }
@@ -129,12 +171,12 @@ function broadcast(code, obj) {
   for (const res of room(code).clients) res.write(payload);
 }
 
-function addMessage(code, text) {
+function addMessage(code, text, pollId = QA_ID) {
   const r = room(code);
-  const msg = { id: r.messages.length + 1, text, ts: Date.now(), reactions: 0, deleted: false, pinned: false };
+  const msg = { id: r.messages.length + 1, pollId, text, ts: Date.now(), reactions: 0, deleted: false, pinned: false };
   r.messages.push(msg);
   r.byId.set(msg.id, msg);
-  append(code, { id: msg.id, text: msg.text, ts: msg.ts });
+  append(code, { id: msg.id, pollId: msg.pollId, text: msg.text, ts: msg.ts });
   broadcast(code, { kind: "msg", ...msg });
   return msg;
 }
@@ -197,9 +239,12 @@ app.get("/admin/:code", (req, res) =>
 app.get("/api/:code", (req, res) => {
   const meta = eventMeta(req.params.code);
   if (!meta) return res.status(404).json({ error: "unknown event code" });
-  const { adminKey, ...pub } = meta; // adminKey는 절대 노출하지 않음
-  const polls = (meta.polls || []).map((p) => ({ ...p, counts: pollCounts(req.params.code, p) }));
-  res.json({ ...pub, polls, messages: visibleMessages(req.params.code), stage: room(req.params.code).stage });
+  const normalized = normalizeMeta(meta);
+  const { adminKey, ...pub } = normalized; // adminKey는 절대 노출하지 않음
+  const polls = normalized.polls.map((p) => ({ ...p, counts: p.type === "choice" ? pollCounts(req.params.code, p) : undefined }));
+  const messages = visibleMessages(req.params.code);
+  const currentStage = room(req.params.code).stage;
+  res.json({ ...pub, polls, qa: { id: QA_ID, q: "청중 Q&A", sort: normalized.qaSort, messages: messages.filter((m) => m.pollId === QA_ID) }, messages, stage: currentStage });
 });
 
 // SSE stream
@@ -232,8 +277,14 @@ app.post("/msg/:code", (req, res) => {
   const now = Date.now();
   if (now - (lastPost.get(ip) || 0) < RATE_MS)
     return res.status(429).json({ error: "slow down" });
+  const meta = normalizeMeta(eventMeta(req.params.code));
+  const pollId = (req.body?.pollId || QA_ID).toString();
+  if (pollId !== QA_ID) {
+    const poll = meta.polls.find((p) => p.id === pollId);
+    if (!poll || poll.type !== "text") return res.status(400).json({ error: "bad text poll" });
+  }
   lastPost.set(ip, now);
-  res.json(addMessage(req.params.code, text));
+  res.json(addMessage(req.params.code, text, pollId));
 });
 
 // 익명 리액션 (👍) — 계정 없으니 탭 카운터, Slido "반응"과 동일
@@ -277,12 +328,75 @@ app.post("/admin/:code/stage", (req, res) => {
   const meta = eventMeta(req.params.code);
   if (!meta) return res.status(404).json({ error: "unknown event code" });
   if (!keyOk(meta, req)) return res.status(403).json({ error: "관리자 키 필요" });
-  const focus = (req.body?.focus ?? "wall").toString();
+  const requestedFocus = (req.body?.focus ?? QA_ID).toString();
+  const focus = requestedFocus === "wall" ? QA_ID : requestedFocus;
   const sort = req.body?.sort === "top" ? "top" : "recent";
-  // focus는 "wall" 또는 존재하는 poll id만 허용
-  if (focus !== "wall" && !(meta.polls || []).some((p) => p.id === focus))
+  if (focus !== QA_ID && !(meta.polls || []).some((p) => p.id === focus))
     return res.status(400).json({ error: "bad focus" });
   res.json(setStage(req.params.code, focus, sort));
+});
+
+function validPollInput(body, existingId = null) {
+  const type = body?.type === "text" ? "text" : "choice";
+  const id = String(body?.id || existingId || "").trim();
+  const q = String(body?.q || "").trim().slice(0, MAX_POLL_TITLE);
+  if (!/^[a-z0-9][a-z0-9_-]{1,48}$/i.test(id) || id === QA_ID || !q) return null;
+  const options = type === "choice"
+    ? (Array.isArray(body.options) ? body.options : []).map((x) => String(x).trim().slice(0, MAX_OPTION_LEN)).filter(Boolean).slice(0, MAX_OPTIONS)
+    : [];
+  if (type === "choice" && options.length < 2) return null;
+  return { id, type, q, options, sort: body.sort === "top" ? "top" : "recent" };
+}
+
+function adminMeta(req, res) {
+  const meta = eventMeta(req.params.code);
+  if (!meta) { res.status(404).json({ error: "unknown event code" }); return null; }
+  if (!keyOk(meta, req)) { res.status(403).json({ error: "관리자 키 필요" }); return null; }
+  return normalizeMeta(meta);
+}
+
+app.post("/admin/:code/poll/create", (req, res) => {
+  const meta = adminMeta(req, res); if (!meta) return;
+  const poll = validPollInput(req.body);
+  if (!poll || meta.polls.some((p) => p.id === poll.id)) return res.status(400).json({ error: "bad or duplicate poll" });
+  meta.polls.push({ ...poll, order: meta.polls.length });
+  saveMeta(req.params.code, meta);
+  broadcast(req.params.code, { kind: "polls", polls: normalizeMeta(meta).polls });
+  res.json({ ok: true, poll });
+});
+
+app.post("/admin/:code/poll/:id/update", (req, res) => {
+  const meta = adminMeta(req, res); if (!meta) return;
+  const i = meta.polls.findIndex((p) => p.id === req.params.id);
+  const poll = validPollInput(req.body, req.params.id);
+  if (i < 0 || !poll || (poll.id !== req.params.id && meta.polls.some((p) => p.id === poll.id))) return res.status(400).json({ error: "bad poll" });
+  meta.polls[i] = { ...meta.polls[i], ...poll };
+  saveMeta(req.params.code, meta);
+  broadcast(req.params.code, { kind: "polls", polls: normalizeMeta(meta).polls });
+  res.json({ ok: true, poll: meta.polls[i] });
+});
+
+app.post("/admin/:code/poll/:id/delete", (req, res) => {
+  const meta = adminMeta(req, res); if (!meta) return;
+  const i = meta.polls.findIndex((p) => p.id === req.params.id);
+  if (i < 0) return res.status(404).json({ error: "no such poll" });
+  meta.polls.splice(i, 1);
+  if (room(req.params.code).stage.focus === req.params.id) setStage(req.params.code, QA_ID, meta.qaSort);
+  saveMeta(req.params.code, meta);
+  broadcast(req.params.code, { kind: "polls", polls: normalizeMeta(meta).polls });
+  res.json({ ok: true });
+});
+
+app.post("/admin/:code/poll/:id/move/:direction", (req, res) => {
+  const meta = adminMeta(req, res); if (!meta) return;
+  const i = meta.polls.findIndex((p) => p.id === req.params.id);
+  const d = req.params.direction === "up" ? -1 : req.params.direction === "down" ? 1 : 0;
+  const j = i + d;
+  if (i < 0 || !d || j < 0 || j >= meta.polls.length) return res.status(400).json({ error: "cannot move poll" });
+  [meta.polls[i], meta.polls[j]] = [meta.polls[j], meta.polls[i]];
+  saveMeta(req.params.code, meta);
+  broadcast(req.params.code, { kind: "polls", polls: normalizeMeta(meta).polls });
+  res.json({ ok: true, polls: normalizeMeta(meta).polls });
 });
 
 // QR (참가 URL 인코딩)

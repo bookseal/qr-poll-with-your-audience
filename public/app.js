@@ -3,7 +3,7 @@ export const esc = encodeURIComponent;
 
 // code의 메타+기존 메시지 로드, 이후 SSE로 신규/리액션 수신.
 // onMsg(m): 메시지(초기 로드분 + 신규), onReact({id,reactions}): 리액션 갱신
-export async function connect(code, { onMeta, onMsg, onReact, onVote, onDel, onPin, onStage } = {}) {
+export async function connect(code, { onMeta, onMsg, onReact, onVote, onDel, onPin, onStage, onPolls } = {}) {
   const r = await fetch(`/api/${esc(code)}`);
   if (!r.ok) {
     document.body.innerHTML = `<div class="center"><div class="card"><h1>없는 코드</h1><p>이벤트 코드 <b>${code}</b> 를 찾을 수 없어요.</p><a href="/">← 처음으로</a></div></div>`;
@@ -21,6 +21,7 @@ export async function connect(code, { onMeta, onMsg, onReact, onVote, onDel, onP
     else if (o.kind === "del") onDel?.(o);
     else if (o.kind === "pin") onPin?.(o);
     else if (o.kind === "stage") onStage?.(o);
+    else if (o.kind === "polls") onPolls?.(o.polls);
     else onMsg?.(o);
   };
   return es;
@@ -45,11 +46,11 @@ export async function adminAction(code, key, pathPart, body = {}) {
   return r.ok ? r.json() : null;
 }
 
-export async function send(code, text) {
+export async function send(code, text, pollId = "qa") {
   const r = await fetch(`/msg/${esc(code)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, pollId }),
   });
   return r.ok;
 }
@@ -93,6 +94,14 @@ export function renderPoll(code, poll, interactive) {
   const q = document.createElement("h3");
   q.textContent = poll.q; // XSS 안전
   wrap.append(q);
+
+  if (poll.type === "text") {
+    const hint = document.createElement("p");
+    hint.className = "poll-hint";
+    hint.textContent = interactive ? "아래 입력창에서 익명으로 응답하세요." : `${poll.responseCount || 0}개 응답`;
+    wrap.append(hint);
+    return wrap;
+  }
 
   const votedKey = `voted:${code}:${poll.id}`;
   const votedOpt = localStorage.getItem(votedKey);

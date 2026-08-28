@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "seed": "node seed/seed.js",
+    "migrate": "node seed/migrate.js",
     "test": "node server.js --selftest"
   },
   "dependencies": {

@@ -30,6 +30,13 @@
 
     <section class="panel">
       <div class="panel-title">투표 (질문)</div>
+      <form id="pollform" class="pollform">
+        <input id="pollid" placeholder="id (예: check-in)" pattern="[A-Za-z0-9_-]{2,49}" required />
+        <input id="pollq" placeholder="질문" required />
+        <select id="polltype"><option value="choice">객관식</option><option value="text">텍스트 응답</option></select>
+        <input id="polloptions" placeholder="선택지 (쉼표로 구분)" />
+        <button type="submit">poll 추가</button>
+      </form>
       <div id="polls"></div>
     </section>
 
@@ -40,7 +47,7 @@
   </div>
 
   <script type="module">
-    import { connect, renderPoll, updatePoll, sortMessages, adminAction } from "/app.js?v=4";
+    import { connect, renderPoll, updatePoll, sortMessages, adminAction } from "/app.js?v=5";
     const parts = location.pathname.split("/");
     const code = parts.pop();
     const key = new URLSearchParams(location.search).get("key") || "";
@@ -57,12 +64,12 @@
     const msgs = new Map();
     const polls = new Map();
     let pollOrder = [];        // poll id 순서
-    let stage = { focus: "wall", sort: "recent" };
+    let stage = { focus: "qa", sort: "recent" };
 
-    const stages = () => ["wall", ...pollOrder];
-    const label = (f) => (f === "wall" ? "💬 메시지 월" : (polls.get(f)?.q || f));
+    const stages = () => ["qa", ...pollOrder];
+    const label = (f) => (f === "qa" || f === "wall" ? "🙋 청중 Q&A" : (polls.get(f)?.q || f));
 
-    async function setStage(focus, sort = stage.sort) {
+    async function setStage(focus, sort = (focus === "qa" ? stage.sort : (polls.get(focus)?.sort || "recent"))) {
       if (!key) return;
       const r = await adminAction(code, key, "stage", { focus, sort });
       if (!r) document.getElementById("warn").textContent = "관리자 키가 올바르지 않습니다.";
@@ -103,13 +110,15 @@
     }
 
     function renderMessages() {
-      const arr = sortMessages([...msgs.values()], stage.sort);
+      const pollId = stage.focus === "wall" ? "qa" : stage.focus;
+      const arr = sortMessages([...msgs.values()].filter((m) => (m.pollId || "qa") === pollId), stage.sort);
       feed.replaceChildren(...arr.map(msgRow));
       document.getElementById("mcount").textContent = `(${msgs.size})`;
     }
 
     function renderPolls() {
       pollsEl.replaceChildren(...pollOrder.map((id) => {
+        const p = polls.get(id);
         const box = document.createElement("div");
         box.className = "pollwrap";
         box.append(renderPoll(code, polls.get(id), false));
@@ -120,9 +129,36 @@
         btn.disabled = stage.focus === id;
         btn.onclick = () => setStage(id);
         box.append(btn);
+        const controls = document.createElement("div"); controls.className = "poll-controls";
+        for (const [direction, text] of [["up", "▲"], ["down", "▼"]]) {
+          const move = document.createElement("button"); move.type = "button"; move.className = "mini"; move.textContent = text;
+          move.title = direction === "up" ? "위로" : "아래로";
+          move.onclick = async () => { await adminAction(code, key, `poll/${id}/move/${direction}`); };
+          controls.append(move);
+        }
+        const edit = document.createElement("button"); edit.type = "button"; edit.className = "mini"; edit.textContent = "편집";
+        edit.onclick = async () => {
+          const p = polls.get(id); const q = prompt("질문", p.q); if (q === null) return;
+          const options = p.type === "choice" ? prompt("선택지 (쉼표로 구분)", p.options.join(",")) : "";
+          if (options === null) return;
+          await adminAction(code, key, `poll/${id}/update`, { id, type: p.type, q, options: options.split(",") });
+        };
+        const del = document.createElement("button"); del.type = "button"; del.className = "mini danger"; del.textContent = "삭제";
+        del.onclick = async () => { if (confirm("이 poll을 삭제할까요?")) await adminAction(code, key, `poll/${id}/delete`); };
+        const sort = document.createElement("button"); sort.type = "button"; sort.className = "mini"; sort.textContent = p.sort === "top" ? "인기순" : "최신순";
+        sort.onclick = () => adminAction(code, key, "stage", { focus: id, sort: p.sort === "top" ? "recent" : "top" });
+        controls.append(edit, del, sort); box.append(controls);
         return box;
       }));
     }
+
+    document.getElementById("pollform").onsubmit = async (e) => {
+      e.preventDefault();
+      const type = document.getElementById("polltype").value;
+      const options = document.getElementById("polloptions").value.split(",").map((x) => x.trim()).filter(Boolean);
+      await adminAction(code, key, "poll/create", { id: document.getElementById("pollid").value.trim(), type, q: document.getElementById("pollq").value.trim(), options });
+      e.target.reset();
+    };
 
     document.getElementById("sort").onclick = () =>
       setStage(stage.focus, stage.sort === "top" ? "recent" : "top");
@@ -150,6 +186,7 @@
         if (w) updatePoll(w, counts);
       },
       onStage: (s) => { stage = { focus: s.focus, sort: s.sort }; renderStageBar(); renderPolls(); renderMessages(); },
+      onPolls: (items) => { polls.clear(); pollOrder = items.map((p) => (polls.set(p.id, p), p.id)); renderStageBar(); renderPolls(); },
     });
   </script>
 </body>

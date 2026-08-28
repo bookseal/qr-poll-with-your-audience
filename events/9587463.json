@@ -5,6 +5,7 @@
   "polls": [
     {
       "id": "mvp-progress",
+      "type": "choice",
       "q": "🚦 지금 내 MVP, 어디까지 왔어요?",
       "options": [
         "아이디어만 있음",
@@ -12,7 +13,10 @@
         "개발 중",
         "거의 완성",
         "이미 배포함"
-      ]
+      ],
+      "sort": "recent",
+      "order": 0
     }
-  ]
+  ],
+  "qaSort": "recent"
 }

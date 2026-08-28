@@ -50,6 +50,14 @@ header .code { color: var(--muted); font-size: 13px; }
   cursor: pointer;
   text-decoration: underline;
 }
+.tabs { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0 4px; scrollbar-width: thin; }
+.tab { flex: 0 0 auto; padding: 8px 14px; border-radius: 999px; background: var(--card); border: 1px solid #2f3441; }
+.tab.active { background: var(--accent); border-color: var(--accent); }
+.tab:disabled { opacity: .45; cursor: not-allowed; }
+.poll-hint { color: var(--muted); margin: 0; }
+.pollform { display: grid; grid-template-columns: 1fr 2fr auto; gap: 8px; margin-bottom: 12px; }
+.pollform select, .pollform input { min-width: 0; }
+.pollform input:nth-of-type(3) { grid-column: 1 / -1; }
 @keyframes pop { from { transform: translateY(6px); opacity: 0; } }
 .composer {
   position: fixed;
@@ -72,6 +80,8 @@ input, button, textarea {
 input, textarea { flex: 1; resize: none; }
 button { background: var(--accent); border: none; color: #fff; cursor: pointer; padding: 12px 18px; }
 button:disabled { opacity: .5; cursor: default; }
+button, .tab, .chip, .poll, #feed li { transition: transform .18s ease, opacity .18s ease, background-color .18s ease, border-color .18s ease; }
+button:not(:disabled):active, .tab:not(:disabled):active { transform: scale(.97); }
 
 /* landing */
 .center { min-height: 100dvh; display: grid; place-items: center; }
@@ -174,3 +184,6 @@ button.ghost.small, button.small { font-size: 13px; padding: 8px 12px; }
 .mini { background: #2b303b; border: 1px solid #3a4150; color: var(--fg); font-size: 12px; padding: 5px 9px; border-radius: 7px; cursor: pointer; }
 .mini:hover { border-color: var(--accent); }
 .mini.danger:hover { border-color: #e5484d; color: #e5484d; }
+.poll-controls { display: flex; gap: 6px; margin-top: 8px; }
+@media (max-width: 620px) { .pollform { grid-template-columns: 1fr 1fr; } .pollform button { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

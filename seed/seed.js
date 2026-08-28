@@ -24,7 +24,7 @@ const file = path.join(dir, `${CODE}.jsonl`);
 
 let ts = Date.now() - ideas.length * 60000; // 과거 시각으로 흩뿌림
 const lines = ideas.map((text, i) =>
-  JSON.stringify({ id: i + 1, text, ts: (ts += 60000) })
+  JSON.stringify({ id: i + 1, pollId: "qa", text, ts: (ts += 60000) })
 );
 fs.writeFileSync(file, lines.join("\n") + "\n");
 console.log(`seeded ${ideas.length} messages -> ${file}`);

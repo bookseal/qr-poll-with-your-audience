@@ -24,10 +24,21 @@ Slido를 따라가되 항상 "지금 강의에 필요한 최소"만 붙인다. �
 - 메시지 삭제(soft, 데이터 보존)·고정(pin)·좋아요순 정렬 제어
 - 이벤트 생성 시 adminKey 발급, /api엔 adminKey 미노출
 
-## Phase 4 — 다중 이벤트 / Export
+## Phase 4 — 청중 Q&A / poll 분리
+- 청중 Q&A를 일반 poll과 분리한 상시 탭으로 제공
+- 객관식·텍스트 응답 poll 모델과 기존 메시지 명시적 마이그레이션
+
+## Phase 5 — poll 관리 / 순서 / 정렬
+- 관리자 poll 전체 CRUD, 위·아래 순서 변경, 이벤트 JSON 영속화
+- Q&A·텍스트 poll별 최신순/인기순 정렬 및 stage 제어
+
+## Phase 6 — UI 모션
+- 탭·stage·응답·투표 결과 전환 애니메이션과 reduced-motion 대응
+
+## Phase 7 — 다중 이벤트 / Export
 - 이벤트 목록 관리 UI
 - 결과 CSV/JSON export
 - 저장소를 JSONL → SQLite로 승급(동시성/쿼리 필요 시)
 
-## Phase 5 — 오픈텍스트 시각화
+## Phase 8 — 오픈텍스트 시각화
 - 응답 word cloud, 라이트/다크 테마

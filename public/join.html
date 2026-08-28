@@ -12,6 +12,7 @@
       <h1 id="title">…</h1>
       <div class="code">🙋 청중 · 익명 참여 · 코드 <span id="code"></span></div>
     </header>
+    <nav id="tabs" class="tabs" aria-label="참여 유형"></nav>
     <div id="pollbox"></div>
     <ul id="feed"></ul>
   </div>
@@ -23,7 +24,7 @@
   </div>
 
   <script type="module">
-    import { connect, send, buildLi, setCount, renderPoll, updatePoll } from "/app.js?v=4";
+    import { connect, send, buildLi, setCount, renderPoll, updatePoll } from "/app.js?v=5";
     const code = location.pathname.split("/").pop();
     const feed = document.getElementById("feed");
     const pollbox = document.getElementById("pollbox");
@@ -31,21 +32,38 @@
     document.getElementById("code").textContent = code;
 
     const polls = new Map();
-    let stage = { focus: "wall", sort: "recent" };
+    const msgs = new Map();
+    let stage = { focus: "qa", sort: "recent" };
+    let active = "qa";
+    const qa = { id: "qa", q: "청중 Q&A", type: "text", sort: "recent" };
 
-    // 관리자가 focus한 것만 보여준다 (Slido처럼): 메시지 월 ↔ 지금 띄운 질문
+    function tabs() {
+      const items = [qa, ...polls.values()];
+      document.getElementById("tabs").replaceChildren(...items.map((p) => {
+        const b = document.createElement("button"); b.type = "button";
+        b.className = "tab" + (active === p.id ? " active" : "");
+        b.textContent = p.q; b.onclick = () => { if (p.id === qa.id || p.id === stage.focus) { active = p.id; applyStage(); } };
+        if (p.id !== qa.id && p.id !== stage.focus) b.disabled = true;
+        return b;
+      }));
+    }
+
     function applyStage() {
-      const p = stage.focus !== "wall" && polls.get(stage.focus);
+      const focus = stage.focus === "wall" ? "qa" : stage.focus;
+      if (active !== qa.id && active !== focus) active = focus;
+      const p = active === qa.id ? qa : polls.get(active);
+      tabs();
       if (p) {
-        feed.hidden = true;
-        composer.hidden = true;
+        const textMode = active === qa.id || p.type === "text";
+        feed.hidden = !textMode;
+        composer.hidden = !textMode;
         pollbox.hidden = false;
-        pollbox.replaceChildren(renderPoll(code, p, true)); // 투표 가능
+        pollbox.replaceChildren(renderPoll(code, p, true));
+        const list = [...msgs.values()].filter((m) => m.pollId === active);
+        feed.replaceChildren(...list.map((m) => buildLi(code, m)));
       } else {
         pollbox.hidden = true;
         pollbox.replaceChildren();
-        feed.hidden = false;
-        composer.hidden = false;
       }
     }
 
@@ -54,25 +72,31 @@
         document.getElementById("title").textContent = d.title;
         (d.polls || []).forEach((p) => polls.set(p.id, p));
         if (d.stage) stage = d.stage;
+        (d.qa ? [d.qa] : []).forEach((p) => Object.assign(qa, p));
+        (d.polls || []).forEach((p) => polls.set(p.id, p));
+        active = stage.focus === "wall" ? qa.id : stage.focus;
         applyStage();
       },
       onMsg: (m) => {
-        const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 60;
-        const li = buildLi(code, m);
-        feed.append(li);
-        if (atBottom && !feed.hidden) li.scrollIntoView({ behavior: "smooth" });
+        msgs.set(m.id, m);
+        if (m.pollId === active) {
+          const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 60;
+          const li = buildLi(code, m); feed.append(li);
+          if (atBottom) li.scrollIntoView({ behavior: "smooth" });
+        }
       },
       onReact: ({ id, reactions }) => setCount(feed, id, reactions),
-      onDel: ({ id }) => feed.querySelector(`li[data-id="${id}"]`)?.remove(),
+      onDel: ({ id }) => { msgs.delete(id); feed.querySelector(`li[data-id="${id}"]`)?.remove(); },
       onPin: ({ id, on }) => feed.querySelector(`li[data-id="${id}"]`)?.classList.toggle("pinned", on),
       onVote: ({ poll, counts }) => {
         const p = polls.get(poll); if (p) p.counts = counts;
-        if (stage.focus === poll) {
+        if (active === poll) {
           const w = pollbox.querySelector(`.poll[data-poll="${poll}"]`);
           if (w) updatePoll(w, counts);
         }
       },
       onStage: (s) => { stage = { focus: s.focus, sort: s.sort }; applyStage(); },
+      onPolls: (items) => { polls.clear(); items.forEach((p) => polls.set(p.id, p)); applyStage(); },
     });
 
     const form = document.getElementById("form");
@@ -82,7 +106,7 @@
       const v = text.value.trim();
       if (!v) return;
       text.value = "";
-      if (!(await send(code, v))) text.value = v; // 실패 시 복구
+      if (!(await send(code, v, active))) text.value = v; // 실패 시 복구
     });
     // Enter=전송, Shift+Enter=줄바꿈. 한글 IME 조합 중 Enter는 무시(조합 확정용).
     text.addEventListener("keydown", (e) => {
