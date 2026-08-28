@@ -22,13 +22,6 @@
     <ul id="chatFeed" class="chat-feed"></ul>
     <form class="chat-composer" id="chatForm"><textarea id="chatText" rows="1" maxlength="500" placeholder="Say anything…" required></textarea><button id="chatSend">Send</button></form>
   </aside>
-  <div class="composer" id="composer">
-    <form class="inner" id="form">
-      <textarea id="text" rows="1" maxlength="500" placeholder="Write anonymously…" required></textarea>
-      <button id="send">Send</button>
-    </form>
-  </div>
-
   <script type="module">
     import { connect, send, buildLi, setCount, renderPoll, updatePoll } from "/app.js?v=5";
     const pathParts = location.pathname.split("/").filter(Boolean);
@@ -36,7 +29,6 @@
     const code = chatMode ? pathParts.at(-2) : pathParts.at(-1);
     const feed = document.getElementById("feed");
     const pollbox = document.getElementById("pollbox");
-    const composer = document.getElementById("composer");
     document.getElementById("code").textContent = code;
 
     const polls = new Map();
@@ -87,7 +79,6 @@
       if (p) {
         const textMode = p.type === "text";
         feed.hidden = !textMode;
-        composer.hidden = chatMode || !textMode;
         pollbox.hidden = false;
         pollbox.replaceChildren(renderPoll(code, p, true));
         const list = [...msgs.values()].filter((m) => m.pollId === active);
@@ -96,7 +87,6 @@
         pollbox.hidden = true;
         pollbox.replaceChildren();
         feed.hidden = false;
-        composer.hidden = chatMode;
         feed.replaceChildren();
       }
       renderChat();
@@ -136,20 +126,6 @@
       onPolls: (items) => { polls.clear(); items.forEach((p) => polls.set(p.id, p)); applyStage(); },
     });
 
-    const form = document.getElementById("form");
-    const text = document.getElementById("text");
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const v = text.value.trim();
-      if (!v) return;
-      text.value = "";
-      if (!(await send(code, v, active))) text.value = v; // restore on failure
-    });
-    // Enter sends, Shift+Enter adds a line break. Ignore Enter during IME composition.
-    text.addEventListener("keydown", (e) => {
-      if (e.isComposing || e.keyCode === 229) return; // IME 조합 중
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
-    });
     const chatForm = document.getElementById("chatForm");
     const chatText = document.getElementById("chatText");
     chatForm.addEventListener("submit", async (e) => {
