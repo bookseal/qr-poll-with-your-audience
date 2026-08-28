@@ -17,37 +17,44 @@
       <p id="warn" class="err"></p>
     </header>
 
-    <nav class="admin-tabs" aria-label="Presenter views">
-      <button id="pollsTab" class="admin-tab active" type="button">Polls</button>
-      <button id="chatTab" class="admin-tab" type="button" aria-label="Open chat room">💬 <span id="chatBadge" class="unread-label" hidden></span></button>
-    </nav>
+    <div class="admin-layout">
+      <aside class="admin-sidebar" aria-label="Presenter navigation">
+        <div class="sidebar-label">Views</div>
+        <button id="pollsTab" class="admin-tab active" type="button">Polls</button>
+        <button id="chatTab" class="admin-tab" type="button" aria-label="Open chat room">💬 <span id="chatBadge" class="unread-label" hidden></span></button>
+        <div class="sidebar-label">Show on screen</div>
+        <div id="sidebarItems" class="sidebar-items"></div>
+      </aside>
 
-    <section id="pollsPanel" class="panel">
-      <div class="panel-title">Now on projector</div>
-      <div id="stagebar" class="stagebar"></div>
-      <div class="stage-nav">
-        <button id="prev" type="button">◀ Previous</button>
-        <button id="next" type="button">Next ▶</button>
-        <span class="spacer"></span>
-        <button id="sort" type="button" class="sortbtn">Recent</button>
-      </div>
-    </section>
+      <main class="admin-content">
+        <section id="pollsPanel" class="panel">
+          <div class="panel-title">Now on projector</div>
+          <div id="stagebar" class="stagebar"></div>
+          <div class="stage-nav">
+            <button id="prev" type="button">◀ Previous</button>
+            <button id="next" type="button">Next ▶</button>
+            <span class="spacer"></span>
+            <button id="sort" type="button" class="sortbtn">Recent</button>
+          </div>
+        </section>
 
-    <section class="panel">
-      <div class="panel-title">Polls</div>
-      <form id="pollform" class="pollform">
-        <input id="pollq" placeholder="Question" required />
-        <select id="polltype"><option value="choice">Multiple choice</option><option value="text">Text response</option></select>
-        <input id="polloptions" placeholder="Options, separated by commas" />
-        <button type="submit">Add poll</button>
-      </form>
-      <div id="polls"></div>
-    </section>
+        <section class="panel">
+          <div class="panel-title">Polls</div>
+          <form id="pollform" class="pollform">
+            <input id="pollq" placeholder="Question" required />
+            <select id="polltype"><option value="choice">Multiple choice</option><option value="text">Text response</option></select>
+            <input id="polloptions" placeholder="Options, separated by commas" />
+            <button type="submit">Add poll</button>
+          </form>
+          <div id="polls"></div>
+        </section>
 
-    <section id="chatPanel" class="panel" hidden>
-      <div class="panel-title">💬 <span id="mcount" class="count"></span></div>
-      <ul id="feed" class="adminfeed"></ul>
-    </section>
+        <section id="chatPanel" class="panel" hidden>
+          <div class="panel-title">💬 <span id="mcount" class="count"></span></div>
+          <ul id="feed" class="adminfeed"></ul>
+        </section>
+      </main>
+    </div>
   </div>
 
   <script type="module">
@@ -67,6 +74,7 @@
     const chatPanel = document.getElementById("chatPanel");
     const chatTab = document.getElementById("chatTab");
     const chatBadge = document.getElementById("chatBadge");
+    const sidebarItems = document.getElementById("sidebarItems");
     const pollsEl = document.getElementById("polls");
     const stagebar = document.getElementById("stagebar");
     const msgs = new Map();
@@ -91,6 +99,24 @@
     const stages = () => ["qa", ...pollOrder];
     const label = (f) => (f === "qa" || f === "wall" ? "💬" : (polls.get(f)?.q || f));
 
+    function renderSidebar() {
+      sidebarItems.replaceChildren(...stages().map((f) => {
+        const row = document.createElement("div");
+        row.className = "sidebar-item" + (f === stage.focus ? " active" : "");
+        const name = document.createElement("span");
+        name.className = "sidebar-item-label";
+        name.textContent = label(f);
+        name.title = f === "qa" ? "Chat Room" : (polls.get(f)?.q || f);
+        const play = document.createElement("button");
+        play.type = "button"; play.className = "mini play"; play.textContent = "▶";
+        play.title = "Show on audience and projector";
+        play.setAttribute("aria-label", `Show ${name.title} on audience and projector`);
+        play.onclick = () => { setView(f === "qa"); setStage(f); };
+        row.append(name, play);
+        return row;
+      }));
+    }
+
     async function setStage(focus, sort = (focus === "qa" ? stage.sort : (polls.get(focus)?.sort || "recent"))) {
       if (!key) return;
       const r = await adminAction(code, key, "stage", { focus, sort });
@@ -108,6 +134,7 @@
         return b;
       }));
       document.getElementById("sort").textContent = stage.sort === "top" ? "Popular 👍" : "Recent";
+      renderSidebar();
     }
 
     function msgRow(m) {
@@ -147,7 +174,7 @@
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "ghost small";
-        btn.textContent = stage.focus === id ? "Showing now" : "Show this poll";
+        btn.textContent = stage.focus === id ? "▶ Showing now" : "▶ Show this poll";
         btn.disabled = stage.focus === id;
         btn.onclick = () => setStage(id);
         box.append(btn);
