@@ -256,6 +256,9 @@ function keyOk(meta, req) {
 app.get("/r/:code", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "join.html"))
 );
+app.get("/r/:code/chat", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "join.html"))
+);
 app.get("/present/:code", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "present.html"))
 );

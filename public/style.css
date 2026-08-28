@@ -81,6 +81,14 @@ header .code { color: var(--muted); font-size: 13px; }
   background: var(--card); border: 1px solid var(--line); border-radius: 18px;
   box-shadow: 0 20px 60px var(--shadow); overflow: hidden; animation: panel-in .2s ease;
 }
+.chat-page .wrap { padding-bottom: 20px; }
+.chat-page .tabs, .chat-page #pollbox, .chat-page #feed { display: none; }
+.chat-page .chat-toggle { display: none; }
+.chat-page .chat-panel {
+  position: static; width: auto; max-height: none; margin: 14px auto 0;
+  border-radius: 16px; box-shadow: 0 8px 24px var(--shadow); animation: none;
+}
+.chat-page .chat-feed { max-height: none; min-height: 45dvh; overflow: visible; }
 .chat-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--line); }
 .chat-head strong { display: block; font-size: 18px; }
 .chat-head small { color: var(--muted); font-size: 12px; }
