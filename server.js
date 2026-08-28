@@ -73,7 +73,7 @@ function room(code) {
   if (r) return r;
   // stage: 강사가 프로젝터에 무엇을 어떻게 띄울지 (라이브 상태, 영속 안 함)
   const meta = eventMeta(code);
-  r = { clients: new Set(), messages: [], byId: new Map(), reactors: new Map(), votes: {}, stage: { focus: QA_ID, sort: meta?.qaSort || "recent" } };
+  r = { clients: new Set(), messages: [], byId: new Map(), reactors: new Map(), votes: {}, voters: {}, stage: { focus: QA_ID, sort: meta?.qaSort || "recent" } };
   const f = path.join(DATA_DIR, `${code}.jsonl`);
   if (fs.existsSync(f)) {
     for (const line of fs.readFileSync(f, "utf8").split("\n")) {
@@ -93,7 +93,18 @@ function room(code) {
         }
       } else if (o.t === "v") {
         // 투표 라인: poll별 옵션 카운트
+        if (o.token) {
+          const voters = (r.voters[o.poll] ||= {});
+          if (voters[o.token] !== undefined) continue;
+          voters[o.token] = Number(o.opt);
+        }
         (r.votes[o.poll] ||= {})[o.opt] = (r.votes[o.poll]?.[o.opt] || 0) + 1;
+      } else if (o.t === "uv") {
+        const voters = r.voters[o.poll] || {};
+        const opt = voters[o.token];
+        if (opt === undefined) continue;
+        delete voters[o.token];
+        if (r.votes[o.poll]?.[opt] > 0) r.votes[o.poll][opt]--;
       } else if (o.t === "d") {
         const m = r.byId.get(o.id);
         if (m) m.deleted = true;
@@ -173,11 +184,30 @@ function pollCounts(code, poll) {
   return poll.options.map((_, i) => raw[i] || 0);
 }
 
-function addVote(code, poll, opt) {
+function addVote(code, poll, opt, token = "") {
   if (opt < 0 || opt >= poll.options.length) return null;
   const r = room(code);
+  if (token) {
+    const voters = (r.voters[poll.id] ||= {});
+    if (voters[token] !== undefined) return pollCounts(code, poll);
+    voters[token] = opt;
+  }
   (r.votes[poll.id] ||= {})[opt] = (r.votes[poll.id]?.[opt] || 0) + 1;
-  append(code, { t: "v", poll: poll.id, opt });
+  append(code, { t: "v", poll: poll.id, opt, ...(token ? { token } : {}) });
+  const counts = pollCounts(code, poll);
+  broadcast(code, { kind: "vote", poll: poll.id, counts });
+  return counts;
+}
+
+function removeVote(code, poll, token) {
+  if (!token) return null;
+  const r = room(code);
+  const voters = r.voters[poll.id] || {};
+  const opt = voters[token];
+  if (opt === undefined) return pollCounts(code, poll);
+  delete voters[token];
+  if (r.votes[poll.id]?.[opt] > 0) r.votes[poll.id][opt]--;
+  append(code, { t: "uv", poll: poll.id, token });
   const counts = pollCounts(code, poll);
   broadcast(code, { kind: "vote", poll: poll.id, counts });
   return counts;
@@ -346,7 +376,10 @@ app.post("/vote/:code/:poll/:opt", (req, res) => {
   if (!meta) return res.status(404).json({ error: "unknown event code" });
   const poll = (meta.polls || []).find((p) => p.id === req.params.poll);
   if (!poll) return res.status(404).json({ error: "no such poll" });
-  const counts = addVote(req.params.code, poll, Number(req.params.opt));
+  const token = String(req.body?.token || "").slice(0, 128);
+  const counts = req.body?.undo
+    ? removeVote(req.params.code, poll, token)
+    : addVote(req.params.code, poll, Number(req.params.opt), token);
   if (counts === null) return res.status(400).json({ error: "bad option" });
   res.json({ poll: poll.id, counts });
 });

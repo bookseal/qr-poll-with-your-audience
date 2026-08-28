@@ -102,8 +102,18 @@ export function setCount(root, id, n) {
   if (b) b.textContent = n;
 }
 
-export async function vote(code, pollId, opt) {
-  await fetch(`/vote/${esc(code)}/${esc(pollId)}/${opt}`, { method: "POST" });
+export async function vote(code, pollId, opt, undo = false) {
+  const tokenKey = "qr-chat:vote-device";
+  let token = localStorage.getItem(tokenKey);
+  if (!token) {
+    token = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem(tokenKey, token);
+  }
+  await fetch(`/vote/${esc(code)}/${esc(pollId)}/${opt}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, undo }),
+  });
 }
 
 // poll 카드 생성. interactive=true면 옵션 클릭으로 투표(1기기 1표는 localStorage).
@@ -139,7 +149,14 @@ export function renderPoll(code, poll, interactive) {
       if (votedOpt !== null) row.classList.add("voted");
       if (String(i) === votedOpt) row.classList.add("mine");
       row.onclick = () => {
-        if (localStorage.getItem(votedKey) !== null) return; // 1기기 1표
+        const current = localStorage.getItem(votedKey);
+        if (current === String(i)) {
+          localStorage.removeItem(votedKey);
+          wrap.querySelectorAll(".opt").forEach((o) => { o.classList.remove("voted", "mine"); });
+          vote(code, poll.id, i, true);
+          return;
+        }
+        if (current !== null) return; // 1기기 1표
         localStorage.setItem(votedKey, i);
         wrap.querySelectorAll(".opt").forEach((o) => o.classList.add("voted"));
         row.classList.add("mine");
