@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QR Chat · 발표자</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="present">
+    <aside class="qr">
+      <img id="qr" alt="QR" style="width:100%" />
+      <div class="big" id="code"></div>
+      <div class="hint">폰으로 QR을 찍어 익명 참여</div>
+    </aside>
+    <main>
+      <header>
+        <h1 id="title">…</h1>
+        <div class="count"><span id="n">0</span> messages</div>
+      </header>
+      <ul id="feed"></ul>
+    </main>
+  </div>
+
+  <script type="module">
+    import { connect } from "/app.js";
+    const code = location.pathname.split("/").pop();
+    const feed = document.getElementById("feed");
+    document.getElementById("code").textContent = code;
+    document.getElementById("qr").src = `/qr/${encodeURIComponent(code)}.svg`;
+    let n = 0;
+    const bump = () => (document.getElementById("n").textContent = ++n);
+
+    connect(code, {
+      feed,
+      onMeta: (d) => (document.getElementById("title").textContent = d.title),
+      onMessage: (m) => {
+        const li = document.createElement("li");
+        li.textContent = m.text;
+        feed.prepend(li); // 최신이 위로
+        bump();
+      },
+    });
+  </script>
+</body>
+</html>

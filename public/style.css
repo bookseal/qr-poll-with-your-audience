@@ -1,0 +1,65 @@
+:root {
+  --bg: #0f1115;
+  --card: #1a1d24;
+  --fg: #e7e9ee;
+  --muted: #8b909a;
+  --accent: #198038;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 16px/1.5 system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+a { color: var(--accent); }
+.wrap { max-width: 640px; margin: 0 auto; padding: 20px; }
+header h1 { font-size: 18px; margin: 0 0 4px; }
+header .code { color: var(--muted); font-size: 13px; }
+#feed { list-style: none; margin: 16px 0 96px; padding: 0; }
+#feed li {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin: 8px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  animation: pop .18s ease;
+}
+@keyframes pop { from { transform: translateY(6px); opacity: 0; } }
+.composer {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--bg);
+  border-top: 1px solid #262a33;
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+}
+.composer .inner { max-width: 640px; margin: 0 auto; width: 100%; display: flex; gap: 8px; }
+input, button, textarea {
+  font: inherit;
+  border-radius: 10px;
+  border: 1px solid #2b2f38;
+  background: var(--card);
+  color: var(--fg);
+  padding: 12px;
+}
+input, textarea { flex: 1; resize: none; }
+button { background: var(--accent); border: none; color: #fff; cursor: pointer; padding: 12px 18px; }
+button:disabled { opacity: .5; cursor: default; }
+
+/* landing */
+.center { min-height: 100dvh; display: grid; place-items: center; }
+.card { background: var(--card); padding: 28px; border-radius: 16px; width: min(360px, 90vw); }
+.card h1 { margin-top: 0; }
+
+/* presenter */
+.present { display: grid; grid-template-columns: 300px 1fr; gap: 24px; min-height: 100dvh; padding: 24px; }
+.present .qr { background: #fff; padding: 20px; border-radius: 16px; text-align: center; align-self: start; }
+.present .qr svg { width: 100%; height: auto; }
+.present .qr .big { color: #111; font-size: 34px; font-weight: 700; letter-spacing: 3px; margin-top: 8px; }
+.present .qr .hint { color: #555; font-size: 13px; }
+.present #feed { margin-bottom: 0; }
+.present #feed li { font-size: 20px; }
+.count { color: var(--muted); font-size: 14px; }

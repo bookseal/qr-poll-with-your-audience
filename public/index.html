@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QR Chat</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="center">
+    <form class="card" onsubmit="event.preventDefault(); location.href='/r/' + encodeURIComponent(code.value.trim())">
+      <h1>💬 QR Chat</h1>
+      <p class="count">이벤트 코드를 입력하세요.</p>
+      <input id="code" inputmode="numeric" placeholder="예: 9587463" required autofocus />
+      <button style="width:100%; margin-top:12px">입장</button>
+    </form>
+  </div>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QR Chat</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 id="title">…</h1>
+      <div class="code">익명 채팅 · 코드 <span id="code"></span></div>
+    </header>
+    <ul id="feed"></ul>
+  </div>
+  <div class="composer">
+    <form class="inner" id="form">
+      <textarea id="text" rows="1" maxlength="500" placeholder="익명으로 남기기…" required></textarea>
+      <button id="send">보내기</button>
+    </form>
+  </div>
+
+  <script type="module">
+    import { connect, send } from "/app.js";
+    const code = location.pathname.split("/").pop();
+    const feed = document.getElementById("feed");
+    document.getElementById("code").textContent = code;
+
+    connect(code, {
+      feed,
+      onMeta: (d) => (document.getElementById("title").textContent = d.title),
+      onMessage: (m) => {
+        const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 60;
+        const li = document.createElement("li");
+        li.textContent = m.text;
+        feed.append(li);
+        if (atBottom) li.scrollIntoView({ behavior: "smooth" });
+      },
+    });
+
+    const form = document.getElementById("form");
+    const text = document.getElementById("text");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const v = text.value.trim();
+      if (!v) return;
+      text.value = "";
+      if (!(await send(code, v))) text.value = v; // 실패 시 복구
+    });
+    // Enter=전송, Shift+Enter=줄바꿈
+    text.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+    });
+  </script>
+</body>
+</html>
