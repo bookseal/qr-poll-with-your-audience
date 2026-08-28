@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -11,21 +11,31 @@
     <div class="card">
       <h1>💬 QR Chat</h1>
 
-      <p class="count">🙋 <b>참여자</b> — 이벤트 코드로 입장</p>
+      <p class="count">🙋 <b>Audience</b> — join with an event code</p>
       <form id="joinForm">
-        <input id="code" inputmode="numeric" placeholder="예: 9587463" required autofocus />
-        <button style="width:100%; margin-top:10px">입장</button>
+        <input id="code" inputmode="numeric" placeholder="e.g. 9587463" required autofocus />
+        <button>Join event</button>
       </form>
 
-      <div class="or">또는</div>
+      <div class="or">or</div>
 
-      <p class="count">🎤 <b>강사</b> — 새 이벤트 만들기 (관리자 콘솔 생성)</p>
+      <p class="count">🔐 <b>Presenter</b> — temporary access</p>
+      <form id="accessForm">
+        <input id="accessCode" inputmode="numeric" placeholder="Event code (e.g. 9587463)" required />
+        <input id="accessEmail" type="email" placeholder="Presenter email" required />
+        <button class="ghost">Open presenter console</button>
+      </form>
+
+      <div class="or">or create a new event</div>
+
+      <p class="count">🎤 <b>Presenter</b> — create a new event</p>
       <form id="newForm">
-        <input id="title" maxlength="80" placeholder="이벤트 제목 (예: 우리 강의 Q&amp;A)" required />
-        <button style="width:100%; margin-top:10px" class="ghost">만들기 →</button>
+        <input id="title" maxlength="80" placeholder="Event title (e.g. Product workshop)" required />
+        <input id="presenterEmail" type="email" placeholder="Presenter email" required />
+        <button class="ghost">Create event →</button>
       </form>
       <p id="err" class="err"></p>
-      <p class="hint-sm">강사는 관리자 콘솔에서 질문을 띄우고 빔프로젝터 창을 엽니다. 학생은 QR만 찍으면 끝.</p>
+      <p class="hint-sm">Temporary access uses your event code and presenter email. Email verification will be added later.</p>
     </div>
   </div>
 
@@ -36,6 +46,21 @@
     });
 
     const err = document.getElementById("err");
+    document.getElementById("accessForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      err.textContent = "";
+      const btn = e.target.querySelector("button"); btn.disabled = true;
+      try {
+        const r = await fetch("/presenter/access", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: accessCode.value.trim(), presenterEmail: accessEmail.value.trim() }),
+        });
+        const d = await r.json();
+        if (!r.ok) { err.textContent = d.error || "Could not open presenter console."; btn.disabled = false; return; }
+        location.href = d.accessUrl;
+      } catch { err.textContent = "Network error."; btn.disabled = false; }
+    });
+
     document.getElementById("newForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       err.textContent = "";
@@ -45,14 +70,14 @@
         const r = await fetch("/new", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: title.value.trim() }),
+          body: JSON.stringify({ title: title.value.trim(), presenterEmail: presenterEmail.value.trim() }),
         });
         const d = await r.json();
-        if (!r.ok) { err.textContent = d.error || "생성 실패"; btn.disabled = false; return; }
+        if (!r.ok) { err.textContent = d.error || "Could not create event."; btn.disabled = false; return; }
         // 관리자 콘솔로 이동 (비밀키 포함). 이 URL을 잃어버리면 제어 못 하니 북마크 권장.
         location.href = `/admin/${d.code}?key=${d.key}`;
       } catch {
-        err.textContent = "네트워크 오류"; btn.disabled = false;
+        err.textContent = "Network error."; btn.disabled = false;
       }
     });
   </script>

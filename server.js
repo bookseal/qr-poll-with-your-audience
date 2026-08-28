@@ -12,6 +12,7 @@ const MAX_LEN = 500;
 const RATE_MS = 800; // ponytail: IP당 최소 간격. 분산 배포 땐 Redis로 승급.
 const MAX_EVENTS = 10; // 남용 방지: 서버가 담는 이벤트 총량 상한
 const MAX_TITLE = 80;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_POLL_TITLE = 160;
 const MAX_OPTIONS = 8;
 const MAX_OPTION_LEN = 80;
@@ -72,7 +73,7 @@ function room(code) {
   if (r) return r;
   // stage: 강사가 프로젝터에 무엇을 어떻게 띄울지 (라이브 상태, 영속 안 함)
   const meta = eventMeta(code);
-  r = { clients: new Set(), messages: [], byId: new Map(), votes: {}, stage: { focus: QA_ID, sort: meta?.qaSort || "recent" } };
+  r = { clients: new Set(), messages: [], byId: new Map(), reactors: new Map(), votes: {}, stage: { focus: QA_ID, sort: meta?.qaSort || "recent" } };
   const f = path.join(DATA_DIR, `${code}.jsonl`);
   if (fs.existsSync(f)) {
     for (const line of fs.readFileSync(f, "utf8").split("\n")) {
@@ -81,7 +82,15 @@ function room(code) {
       if (o.t === "r") {
         // 리액션 라인: 해당 메시지 카운트 증가
         const m = r.byId.get(o.id);
-        if (m) m.reactions++;
+        if (m) {
+          if (o.token) {
+            const tokens = r.reactors.get(o.id) || new Set();
+            r.reactors.set(o.id, tokens);
+            if (tokens.has(o.token)) continue;
+            tokens.add(o.token);
+          }
+          m.reactions++;
+        }
       } else if (o.t === "v") {
         // 투표 라인: poll별 옵션 카운트
         (r.votes[o.poll] ||= {})[o.opt] = (r.votes[o.poll]?.[o.opt] || 0) + 1;
@@ -181,11 +190,18 @@ function addMessage(code, text, pollId = QA_ID) {
   return msg;
 }
 
-function addReaction(code, id) {
+function addReaction(code, id, token = "") {
   const m = room(code).byId.get(id);
   if (!m) return null;
+  if (token) {
+    const reactors = room(code).reactors;
+    const tokens = reactors.get(id) || new Set();
+    reactors.set(id, tokens);
+    if (tokens.has(token)) return m.reactions;
+    tokens.add(token);
+  }
   m.reactions++;
-  append(code, { t: "r", id });
+  append(code, { t: "r", id, ...(token ? { token } : {}) });
   broadcast(code, { kind: "react", id, reactions: m.reactions });
   return m.reactions;
 }
@@ -206,17 +222,29 @@ const lastNew = new Map(); // ip -> ts (이벤트 생성)
 app.post("/new", (req, res) => {
   const ip = req.headers["cf-connecting-ip"] || req.ip;
   if (Date.now() - (lastNew.get(ip) || 0) < 5000)
-    return res.status(429).json({ error: "잠시 후 다시 시도해주세요" });
+    return res.status(429).json({ error: "Please try again in a moment." });
   const title = (req.body?.title ?? "").toString().trim().slice(0, MAX_TITLE);
-  if (!title) return res.status(400).json({ error: "제목을 입력해주세요" });
+  const presenterEmail = String(req.body?.presenterEmail || "").trim().toLowerCase();
+  if (!title) return res.status(400).json({ error: "Please enter an event title." });
+  if (!EMAIL_RE.test(presenterEmail)) return res.status(400).json({ error: "Please enter a valid presenter email." });
   if (eventCount() >= MAX_EVENTS)
-    return res.status(403).json({ error: `이벤트가 가득 찼어요 (최대 ${MAX_EVENTS}개)` });
+    return res.status(403).json({ error: `Event limit reached (maximum ${MAX_EVENTS}).` });
   const code = newCode();
-  if (!code) return res.status(500).json({ error: "코드 생성 실패" });
+  if (!code) return res.status(500).json({ error: "Could not generate an event code." });
   const key = crypto.randomBytes(6).toString("hex"); // 관리자 비밀키
-  fs.writeFileSync(path.join(EVENTS_DIR, `${code}.json`), JSON.stringify({ code, title, adminKey: key }, null, 2));
+  fs.writeFileSync(path.join(EVENTS_DIR, `${code}.json`), JSON.stringify({ code, title, presenterEmail, adminKey: key }, null, 2));
   lastNew.set(ip, Date.now());
   res.json({ code, key });
+});
+
+// Temporary presenter recovery. Email verification will replace this later.
+app.post("/presenter/access", (req, res) => {
+  const code = String(req.body?.code || "").trim();
+  const email = String(req.body?.presenterEmail || "").trim().toLowerCase();
+  const meta = eventMeta(code);
+  if (!meta || !meta.presenterEmail || meta.presenterEmail.toLowerCase() !== email)
+    return res.status(403).json({ error: "The event code and presenter email do not match." });
+  res.json({ accessUrl: `/admin/${encodeURIComponent(code)}?key=${encodeURIComponent(meta.adminKey)}` });
 });
 
 // 관리자 키 검증 (query.key 또는 body.key)
@@ -240,11 +268,11 @@ app.get("/api/:code", (req, res) => {
   const meta = eventMeta(req.params.code);
   if (!meta) return res.status(404).json({ error: "unknown event code" });
   const normalized = normalizeMeta(meta);
-  const { adminKey, ...pub } = normalized; // adminKey는 절대 노출하지 않음
+  const { adminKey, presenterEmail, ...pub } = normalized; // private access fields are never exposed
   const polls = normalized.polls.map((p) => ({ ...p, counts: p.type === "choice" ? pollCounts(req.params.code, p) : undefined }));
   const messages = visibleMessages(req.params.code);
   const currentStage = room(req.params.code).stage;
-  res.json({ ...pub, polls, qa: { id: QA_ID, q: "청중 Q&A", sort: normalized.qaSort, messages: messages.filter((m) => m.pollId === QA_ID) }, messages, stage: currentStage });
+  res.json({ ...pub, polls, qa: { id: QA_ID, q: "Audience Q&A", sort: normalized.qaSort, messages: messages.filter((m) => m.pollId === QA_ID) }, messages, stage: currentStage });
 });
 
 // SSE stream
@@ -291,7 +319,8 @@ app.post("/msg/:code", (req, res) => {
 app.post("/react/:code/:id", (req, res) => {
   if (!eventMeta(req.params.code))
     return res.status(404).json({ error: "unknown event code" });
-  const n = addReaction(req.params.code, Number(req.params.id));
+  const token = String(req.body?.token || "").slice(0, 128);
+  const n = addReaction(req.params.code, Number(req.params.id), token);
   if (n === null) return res.status(404).json({ error: "no such message" });
   res.json({ id: Number(req.params.id), reactions: n });
 });
@@ -311,7 +340,7 @@ app.post("/vote/:code/:poll/:opt", (req, res) => {
 app.post("/admin/:code/delete/:id", (req, res) => {
   const meta = eventMeta(req.params.code);
   if (!meta) return res.status(404).json({ error: "unknown event code" });
-  if (!keyOk(meta, req)) return res.status(403).json({ error: "관리자 키 필요" });
+  if (!keyOk(meta, req)) return res.status(403).json({ error: "An admin key is required." });
   const ok = delMessage(req.params.code, Number(req.params.id));
   res.json({ ok });
 });
@@ -319,7 +348,7 @@ app.post("/admin/:code/delete/:id", (req, res) => {
 app.post("/admin/:code/pin/:id", (req, res) => {
   const meta = eventMeta(req.params.code);
   if (!meta) return res.status(404).json({ error: "unknown event code" });
-  if (!keyOk(meta, req)) return res.status(403).json({ error: "관리자 키 필요" });
+  if (!keyOk(meta, req)) return res.status(403).json({ error: "An admin key is required." });
   const ok = pinMessage(req.params.code, Number(req.params.id), req.body?.on);
   res.json({ ok });
 });
@@ -327,7 +356,7 @@ app.post("/admin/:code/pin/:id", (req, res) => {
 app.post("/admin/:code/stage", (req, res) => {
   const meta = eventMeta(req.params.code);
   if (!meta) return res.status(404).json({ error: "unknown event code" });
-  if (!keyOk(meta, req)) return res.status(403).json({ error: "관리자 키 필요" });
+  if (!keyOk(meta, req)) return res.status(403).json({ error: "An admin key is required." });
   const requestedFocus = (req.body?.focus ?? QA_ID).toString();
   const focus = requestedFocus === "wall" ? QA_ID : requestedFocus;
   const sort = req.body?.sort === "top" ? "top" : "recent";
@@ -338,9 +367,9 @@ app.post("/admin/:code/stage", (req, res) => {
 
 function validPollInput(body, existingId = null) {
   const type = body?.type === "text" ? "text" : "choice";
-  const id = String(body?.id || existingId || "").trim();
+  const id = String(existingId || body?.id || "").trim();
   const q = String(body?.q || "").trim().slice(0, MAX_POLL_TITLE);
-  if (!/^[a-z0-9][a-z0-9_-]{1,48}$/i.test(id) || id === QA_ID || !q) return null;
+  if ((existingId && (!/^[a-z0-9][a-z0-9_-]{1,80}$/i.test(id) || id === QA_ID)) || !q) return null;
   const options = type === "choice"
     ? (Array.isArray(body.options) ? body.options : []).map((x) => String(x).trim().slice(0, MAX_OPTION_LEN)).filter(Boolean).slice(0, MAX_OPTIONS)
     : [];
@@ -351,14 +380,15 @@ function validPollInput(body, existingId = null) {
 function adminMeta(req, res) {
   const meta = eventMeta(req.params.code);
   if (!meta) { res.status(404).json({ error: "unknown event code" }); return null; }
-  if (!keyOk(meta, req)) { res.status(403).json({ error: "관리자 키 필요" }); return null; }
+  if (!keyOk(meta, req)) { res.status(403).json({ error: "An admin key is required." }); return null; }
   return normalizeMeta(meta);
 }
 
 app.post("/admin/:code/poll/create", (req, res) => {
   const meta = adminMeta(req, res); if (!meta) return;
   const poll = validPollInput(req.body);
-  if (!poll || meta.polls.some((p) => p.id === poll.id)) return res.status(400).json({ error: "bad or duplicate poll" });
+  if (!poll) return res.status(400).json({ error: "bad poll" });
+  poll.id = `poll-${Date.now()}-${crypto.randomInt(1000, 10000)}`;
   meta.polls.push({ ...poll, order: meta.polls.length });
   saveMeta(req.params.code, meta);
   broadcast(req.params.code, { kind: "polls", polls: normalizeMeta(meta).polls });
@@ -424,6 +454,8 @@ function selftest() {
   addReaction(code, 1);
   addReaction(code, 1);
   console.assert(room(code).byId.get(1).reactions === 2, "reactions counted");
+  console.assert(addReaction(code, 1, "device-1") === 3, "first device reaction");
+  console.assert(addReaction(code, 1, "device-1") === 3, "duplicate device reaction ignored");
   console.assert(addReaction(code, 999) === null, "react to missing msg -> null");
   const poll = { id: "p1", q: "?", options: ["a", "b", "c"] };
   addVote(code, poll, 0);
@@ -434,7 +466,7 @@ function selftest() {
   rooms.delete(code); // 파일에서 다시 로드되는지 확인
   const reloaded = room(code);
   console.assert(reloaded.messages.length === 2, "reload from jsonl");
-  console.assert(reloaded.byId.get(1).reactions === 2, "reactions persist across reload");
+  console.assert(reloaded.byId.get(1).reactions === 3, "reactions persist across reload");
   console.assert(JSON.stringify(pollCounts(code, poll)) === "[1,0,2]", "votes persist across reload");
   // 삭제/고정/stage
   addMessage(code, "삭제될 메시지");

@@ -1,47 +1,46 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>QR Chat · 관리자</title>
+  <title>QR Chat · Presenter Console</title>
   <link rel="stylesheet" href="/style.css?v=4" />
 </head>
 <body>
   <div class="wrap admin">
     <header>
       <h1 id="title">…</h1>
-      <div class="code">관리자 콘솔 · 코드 <b id="code"></b>
-        · <a id="present" target="_blank" rel="noopener">🖥️ 빔프로젝터 창 열기</a>
-        · <a id="joinlink" target="_blank" rel="noopener">참가 링크</a>
+      <div class="code">Presenter console · code <b id="code"></b>
+        · <a id="present" target="_blank" rel="noopener">🖥️ Open projector</a>
+        · <a id="joinlink" target="_blank" rel="noopener">Audience link</a>
       </div>
       <p id="warn" class="err"></p>
     </header>
 
     <section class="panel">
-      <div class="panel-title">지금 프로젝터에 띄운 것</div>
+      <div class="panel-title">Now on projector</div>
       <div id="stagebar" class="stagebar"></div>
       <div class="stage-nav">
-        <button id="prev" type="button">◀ 이전</button>
-        <button id="next" type="button">다음 ▶</button>
+        <button id="prev" type="button">◀ Previous</button>
+        <button id="next" type="button">Next ▶</button>
         <span class="spacer"></span>
-        <button id="sort" type="button" class="sortbtn">최신순</button>
+        <button id="sort" type="button" class="sortbtn">Recent</button>
       </div>
     </section>
 
     <section class="panel">
-      <div class="panel-title">투표 (질문)</div>
+      <div class="panel-title">Polls</div>
       <form id="pollform" class="pollform">
-        <input id="pollid" placeholder="id (예: check-in)" pattern="[A-Za-z0-9_-]{2,49}" required />
-        <input id="pollq" placeholder="질문" required />
-        <select id="polltype"><option value="choice">객관식</option><option value="text">텍스트 응답</option></select>
-        <input id="polloptions" placeholder="선택지 (쉼표로 구분)" />
-        <button type="submit">poll 추가</button>
+        <input id="pollq" placeholder="Question" required />
+        <select id="polltype"><option value="choice">Multiple choice</option><option value="text">Text response</option></select>
+        <input id="polloptions" placeholder="Options, separated by commas" />
+        <button type="submit">Add poll</button>
       </form>
       <div id="polls"></div>
     </section>
 
     <section class="panel">
-      <div class="panel-title">메시지 <span id="mcount" class="count"></span></div>
+      <div class="panel-title">Responses <span id="mcount" class="count"></span></div>
       <ul id="feed" class="adminfeed"></ul>
     </section>
   </div>
@@ -56,7 +55,7 @@
     document.getElementById("present").href = `/present/${code}`;
     document.getElementById("joinlink").href = `/r/${code}`;
     if (!key) document.getElementById("warn").textContent =
-      "⚠️ 관리자 키가 URL에 없습니다. 제어(삭제·질문 띄우기)가 동작하지 않아요.";
+      "⚠️ The admin key is missing from this URL. Controls will be disabled.";
 
     const feed = document.getElementById("feed");
     const pollsEl = document.getElementById("polls");
@@ -67,12 +66,12 @@
     let stage = { focus: "qa", sort: "recent" };
 
     const stages = () => ["qa", ...pollOrder];
-    const label = (f) => (f === "qa" || f === "wall" ? "🙋 청중 Q&A" : (polls.get(f)?.q || f));
+    const label = (f) => (f === "qa" || f === "wall" ? "🙋 Audience Q&A" : (polls.get(f)?.q || f));
 
     async function setStage(focus, sort = (focus === "qa" ? stage.sort : (polls.get(focus)?.sort || "recent"))) {
       if (!key) return;
       const r = await adminAction(code, key, "stage", { focus, sort });
-      if (!r) document.getElementById("warn").textContent = "관리자 키가 올바르지 않습니다.";
+      if (!r) document.getElementById("warn").textContent = "The admin key is invalid.";
       // 서버가 SSE로 stage를 되쏘므로 별도 렌더 불필요
     }
 
@@ -85,7 +84,7 @@
         b.onclick = () => setStage(f);
         return b;
       }));
-      document.getElementById("sort").textContent = stage.sort === "top" ? "인기순 👍" : "최신순";
+      document.getElementById("sort").textContent = stage.sort === "top" ? "Popular 👍" : "Recent";
     }
 
     function msgRow(m) {
@@ -99,11 +98,11 @@
       meta.className = "rowmeta";
       const cnt = document.createElement("span"); cnt.className = "cnt"; cnt.textContent = `👍 ${m.reactions || 0}`;
       const pin = document.createElement("button"); pin.type = "button"; pin.className = "mini";
-      pin.textContent = m.pinned ? "고정해제" : "고정";
+      pin.textContent = m.pinned ? "Unpin" : "Pin";
       pin.onclick = () => adminAction(code, key, `pin/${m.id}`, { on: !m.pinned });
       const del = document.createElement("button"); del.type = "button"; del.className = "mini danger";
-      del.textContent = "삭제";
-      del.onclick = () => { if (confirm("이 메시지를 숨길까요?")) adminAction(code, key, `delete/${m.id}`); };
+      del.textContent = "Delete";
+      del.onclick = () => { if (confirm("Hide this response?")) adminAction(code, key, `delete/${m.id}`); };
       meta.append(cnt, pin, del);
       li.append(txt, meta);
       return li;
@@ -125,27 +124,27 @@
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "ghost small";
-        btn.textContent = stage.focus === id ? "지금 띄우는 중" : "이 질문 띄우기";
+        btn.textContent = stage.focus === id ? "Showing now" : "Show this poll";
         btn.disabled = stage.focus === id;
         btn.onclick = () => setStage(id);
         box.append(btn);
         const controls = document.createElement("div"); controls.className = "poll-controls";
         for (const [direction, text] of [["up", "▲"], ["down", "▼"]]) {
           const move = document.createElement("button"); move.type = "button"; move.className = "mini"; move.textContent = text;
-          move.title = direction === "up" ? "위로" : "아래로";
+          move.title = direction === "up" ? "Move up" : "Move down";
           move.onclick = async () => { await adminAction(code, key, `poll/${id}/move/${direction}`); };
           controls.append(move);
         }
-        const edit = document.createElement("button"); edit.type = "button"; edit.className = "mini"; edit.textContent = "편집";
+        const edit = document.createElement("button"); edit.type = "button"; edit.className = "mini"; edit.textContent = "Edit";
         edit.onclick = async () => {
-          const p = polls.get(id); const q = prompt("질문", p.q); if (q === null) return;
-          const options = p.type === "choice" ? prompt("선택지 (쉼표로 구분)", p.options.join(",")) : "";
+          const p = polls.get(id); const q = prompt("Question", p.q); if (q === null) return;
+          const options = p.type === "choice" ? prompt("Options (comma-separated)", p.options.join(",")) : "";
           if (options === null) return;
           await adminAction(code, key, `poll/${id}/update`, { id, type: p.type, q, options: options.split(",") });
         };
-        const del = document.createElement("button"); del.type = "button"; del.className = "mini danger"; del.textContent = "삭제";
-        del.onclick = async () => { if (confirm("이 poll을 삭제할까요?")) await adminAction(code, key, `poll/${id}/delete`); };
-        const sort = document.createElement("button"); sort.type = "button"; sort.className = "mini"; sort.textContent = p.sort === "top" ? "인기순" : "최신순";
+        const del = document.createElement("button"); del.type = "button"; del.className = "mini danger"; del.textContent = "Delete";
+        del.onclick = async () => { if (confirm("Delete this poll?")) await adminAction(code, key, `poll/${id}/delete`); };
+        const sort = document.createElement("button"); sort.type = "button"; sort.className = "mini"; sort.textContent = p.sort === "top" ? "Popular" : "Recent";
         sort.onclick = () => adminAction(code, key, "stage", { focus: id, sort: p.sort === "top" ? "recent" : "top" });
         controls.append(edit, del, sort); box.append(controls);
         return box;
@@ -156,7 +155,7 @@
       e.preventDefault();
       const type = document.getElementById("polltype").value;
       const options = document.getElementById("polloptions").value.split(",").map((x) => x.trim()).filter(Boolean);
-      await adminAction(code, key, "poll/create", { id: document.getElementById("pollid").value.trim(), type, q: document.getElementById("pollq").value.trim(), options });
+      await adminAction(code, key, "poll/create", { type, q: document.getElementById("pollq").value.trim(), options });
       e.target.reset();
     };
 

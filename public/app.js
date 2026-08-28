@@ -6,7 +6,7 @@ export const esc = encodeURIComponent;
 export async function connect(code, { onMeta, onMsg, onReact, onVote, onDel, onPin, onStage, onPolls } = {}) {
   const r = await fetch(`/api/${esc(code)}`);
   if (!r.ok) {
-    document.body.innerHTML = `<div class="center"><div class="card"><h1>없는 코드</h1><p>이벤트 코드 <b>${code}</b> 를 찾을 수 없어요.</p><a href="/">← 처음으로</a></div></div>`;
+    document.body.innerHTML = `<div class="center"><div class="card"><h1>Event not found</h1><p>We could not find event code <b>${code}</b>.</p><a href="/">← Back home</a></div></div>`;
     return;
   }
   const data = await r.json();
@@ -55,8 +55,25 @@ export async function send(code, text, pollId = "qa") {
   return r.ok;
 }
 
+function reactionToken() {
+  const key = "qr-chat:reaction-device";
+  let token = localStorage.getItem(key);
+  if (!token) {
+    token = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    localStorage.setItem(key, token);
+  }
+  return token;
+}
+
 export async function react(code, id) {
-  await fetch(`/react/${esc(code)}/${id}`, { method: "POST" });
+  const key = `qr-chat:reacted:${code}:${id}`;
+  if (localStorage.getItem(key)) return;
+  const r = await fetch(`/react/${esc(code)}/${id}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: reactionToken() }),
+  });
+  if (r.ok) localStorage.setItem(key, "1");
 }
 
 // 메시지 li 생성 (텍스트 + 👍 버튼). textContent = XSS 안전.
@@ -70,8 +87,10 @@ export function buildLi(code, m) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "react";
+  const alreadyReacted = localStorage.getItem(`qr-chat:reacted:${code}:${m.id}`);
+  if (alreadyReacted) { btn.classList.add("reacted"); btn.disabled = true; }
   btn.innerHTML = `👍 <b>${m.reactions || 0}</b>`;
-  btn.onclick = () => react(code, m.id);
+  btn.onclick = async () => { await react(code, m.id); btn.classList.add("reacted"); btn.disabled = true; };
   li.append(txt, btn);
   return li;
 }
@@ -98,7 +117,7 @@ export function renderPoll(code, poll, interactive) {
   if (poll.type === "text") {
     const hint = document.createElement("p");
     hint.className = "poll-hint";
-    hint.textContent = interactive ? "아래 입력창에서 익명으로 응답하세요." : `${poll.responseCount || 0}개 응답`;
+    hint.textContent = interactive ? "Use the input below to respond anonymously." : `${poll.responseCount || 0} responses`;
     wrap.append(hint);
     return wrap;
   }

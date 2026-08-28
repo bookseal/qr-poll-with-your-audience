@@ -1,22 +1,7 @@
 {
   "code": "9587463",
-  "title": "E-WAVE 아카데미 · 0827 MVP 만들기",
+  "title": "E-WAVE Academy · MVP Builder",
   "adminKey": "5694653e4805",
-  "polls": [
-    {
-      "id": "mvp-progress",
-      "type": "choice",
-      "q": "🚦 지금 내 MVP, 어디까지 왔어요?",
-      "options": [
-        "아이디어만 있음",
-        "기획/설계 중",
-        "개발 중",
-        "거의 완성",
-        "이미 배포함"
-      ],
-      "sort": "recent",
-      "order": 0
-    }
-  ],
+  "polls": [],
   "qaSort": "recent"
 }

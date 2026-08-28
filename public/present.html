@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>QR Chat · 빔프로젝터</title>
+  <title>QR Chat · Projector</title>
   <link rel="stylesheet" href="/style.css?v=4" />
 </head>
 <body>
@@ -11,7 +11,7 @@
     <aside class="qr">
       <img id="qr" alt="QR" style="width:100%" />
       <div class="big" id="code"></div>
-      <div class="hint">폰으로 QR을 찍어<br />익명으로 참여하세요</div>
+      <div class="hint">Scan the QR code<br />to join anonymously</div>
     </aside>
     <main>
       <header>
@@ -35,7 +35,7 @@
     const msgs = new Map();
     const polls = new Map();
     let stage = { focus: "qa", sort: "recent" };
-    const qa = { id: "qa", q: "청중 Q&A", type: "text", sort: "recent" };
+    const qa = { id: "qa", q: "Audience Q&A", type: "text", sort: "recent" };
 
     function render() {
       if (stage.focus === "wall" || stage.focus === "qa") {
@@ -45,7 +45,7 @@
         feed.replaceChildren(...arr.map((m) => buildLi(code, m)));
         const qaMsgs = [...msgs.values()].filter((m) => m.pollId === "qa");
         feed.replaceChildren(...sortMessages(qaMsgs, stage.sort).map((m) => buildLi(code, m)));
-        sub.textContent = `${qaMsgs.length} Q&A · ${stage.sort === "top" ? "인기순" : "최신순"}`;
+        sub.textContent = `${qaMsgs.length} Q&A · ${stage.sort === "top" ? "Popular" : "Recent"}`;
       } else {
         feed.hidden = true;
         pollbox.hidden = false;
@@ -56,7 +56,7 @@
             const list = [...msgs.values()].filter((m) => m.pollId === p.id);
             feed.hidden = false;
             feed.replaceChildren(...sortMessages(list, p.sort).map((m) => buildLi(code, m)));
-            sub.textContent = `${list.length} responses · ${p.sort === "top" ? "인기순" : "최신순"}`;
+            sub.textContent = `${list.length} responses · ${p.sort === "top" ? "Popular" : "Recent"}`;
           } else {
             const total = (p.counts || []).reduce((a, b) => a + b, 0);
             sub.textContent = `${total} votes`;
