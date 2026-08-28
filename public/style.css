@@ -62,10 +62,10 @@ header .code { color: var(--muted); font-size: 13px; }
 .tab.active { background: var(--accent); border-color: var(--accent); }
 .tab:disabled { opacity: .45; cursor: not-allowed; }
 .poll-hint { color: var(--muted); margin: 0; }
-.admin-layout { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 16px; align-items: start; margin-top: 16px; }
-.admin-sidebar { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 8px 24px var(--shadow); }
+.admin-layout { display: block; margin-top: 16px; }
+.admin-sidebar { position: fixed; z-index: 10; left: 20px; top: 20px; bottom: 20px; width: 208px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 8px 24px var(--shadow); }
 .sidebar-label { color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .08em; margin: 6px 4px 2px; text-transform: uppercase; }
-.admin-content { min-width: 0; }
+.admin-content { min-width: 0; max-width: 900px; margin: 0 auto; }
 .admin-tab { background: var(--bg2); border: 1px solid var(--line); color: var(--fg); border-radius: 999px; padding: 8px 12px; }
 .admin-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .unread-label { display: inline-block; margin-left: 5px; padding: 2px 7px; border-radius: 999px; background: var(--gold); color: var(--fg); font-size: 11px; font-weight: 800; }
@@ -216,7 +216,7 @@ button.ghost { background: var(--card); border: 1px solid var(--accent); color: 
 .hint-sm { color: var(--muted); font-size: 12px; margin: 14px 0 0; line-height: 1.5; }
 
 /* --- 관리자 콘솔 --- */
-.wrap.admin { max-width: 860px; }
+.wrap.admin { max-width: none; margin: 0; padding: 24px 24px 40px 252px; }
 .admin .code { margin-top: 4px; }
 .admin .code a { white-space: nowrap; }
 .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; margin: 14px 0; box-shadow: 0 8px 24px var(--shadow); }
@@ -247,6 +247,16 @@ button.ghost.small, button.small { font-size: 13px; padding: 8px 12px; }
 .mini.danger:hover { border-color: #e5484d; color: #e5484d; }
 .poll-controls { display: flex; gap: 6px; margin-top: 8px; }
 @media (max-width: 620px) { .pollform { grid-template-columns: 1fr 1fr; } .pollform button { grid-column: 1 / -1; } }
-@media (max-width: 720px) { .admin-layout { grid-template-columns: 1fr; } .admin-sidebar { position: static; } .sidebar-items { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 720px) {
+  .wrap.admin { padding-left: 194px; padding-right: 14px; }
+  .admin-sidebar { left: 10px; top: 10px; bottom: 10px; width: 170px; }
+  .admin-content { margin: 0; }
+  .sidebar-items { grid-template-columns: 1fr; }
+}
+@media (max-width: 500px) {
+  .wrap.admin { padding-left: 162px; padding-right: 10px; }
+  .admin-sidebar { left: 6px; top: 6px; bottom: 6px; width: 144px; padding: 8px; }
+  .admin-tab { padding: 8px 10px; }
+}
 @media (max-width: 620px) { .chat-toggle { top: 12px; right: 12px; width: 48px; height: 48px; } .chat-toggle b { position: absolute; top: -4px; right: -4px; } .chat-panel { top: 12px; right: 12px; width: calc(100vw - 24px); max-height: calc(100dvh - 24px); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
