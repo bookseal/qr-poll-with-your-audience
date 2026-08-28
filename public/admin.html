@@ -66,7 +66,7 @@
     let stage = { focus: "qa", sort: "recent" };
 
     const stages = () => ["qa", ...pollOrder];
-    const label = (f) => (f === "qa" || f === "wall" ? "🙋 Audience Q&A" : (polls.get(f)?.q || f));
+    const label = (f) => (f === "qa" || f === "wall" ? "💬 Chat Room" : (polls.get(f)?.q || f));
 
     async function setStage(focus, sort = (focus === "qa" ? stage.sort : (polls.get(focus)?.sort || "recent"))) {
       if (!key) return;

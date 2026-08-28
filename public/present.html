@@ -35,7 +35,7 @@
     const msgs = new Map();
     const polls = new Map();
     let stage = { focus: "qa", sort: "recent" };
-    const qa = { id: "qa", q: "Audience Q&A", type: "text", sort: "recent" };
+    const qa = { id: "qa", q: "Chat Room", type: "text", sort: "recent" };
 
     function render() {
       if (stage.focus === "wall" || stage.focus === "qa") {
@@ -45,7 +45,7 @@
         feed.replaceChildren(...arr.map((m) => buildLi(code, m)));
         const qaMsgs = [...msgs.values()].filter((m) => m.pollId === "qa");
         feed.replaceChildren(...sortMessages(qaMsgs, stage.sort).map((m) => buildLi(code, m)));
-        sub.textContent = `${qaMsgs.length} Q&A · ${stage.sort === "top" ? "Popular" : "Recent"}`;
+        sub.textContent = `${qaMsgs.length} Chat Room · ${stage.sort === "top" ? "Popular" : "Recent"}`;
       } else {
         feed.hidden = true;
         pollbox.hidden = false;

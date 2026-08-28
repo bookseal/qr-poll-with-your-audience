@@ -12,10 +12,16 @@
       <h1 id="title">…</h1>
       <div class="code">🙋 Audience · anonymous participation · code <span id="code"></span></div>
     </header>
-    <nav id="tabs" class="tabs" aria-label="Participation type"></nav>
+    <nav id="tabs" class="tabs" aria-label="Polls"></nav>
     <div id="pollbox"></div>
     <ul id="feed"></ul>
   </div>
+  <button id="chatToggle" class="chat-toggle" type="button" aria-expanded="false">💬 <span>Chat Room</span><b id="chatBadge" hidden>0</b></button>
+  <aside id="chatPanel" class="chat-panel" hidden aria-label="Chat Room">
+    <div class="chat-head"><div><strong>Chat Room</strong><small>Open conversation</small></div><button id="chatClose" class="chat-close" type="button" aria-label="Close Chat Room">×</button></div>
+    <ul id="chatFeed" class="chat-feed"></ul>
+    <form class="chat-composer" id="chatForm"><textarea id="chatText" rows="1" maxlength="500" placeholder="Say anything…" required></textarea><button id="chatSend">Send</button></form>
+  </aside>
   <div class="composer" id="composer">
     <form class="inner" id="form">
       <textarea id="text" rows="1" maxlength="500" placeholder="Write anonymously…" required></textarea>
@@ -35,37 +41,60 @@
     const msgs = new Map();
     let stage = { focus: "qa", sort: "recent" };
     let active = "qa";
-    const qa = { id: "qa", q: "Audience Q&A", type: "text", sort: "recent" };
+    let chatOpen = false;
+    let unreadChat = 0;
+    const qa = { id: "qa", q: "Chat Room", type: "text", sort: "recent" };
+    const chatPanel = document.getElementById("chatPanel");
+    const chatToggle = document.getElementById("chatToggle");
+    const chatFeed = document.getElementById("chatFeed");
+    const chatBadge = document.getElementById("chatBadge");
 
     function tabs() {
-      const items = [qa, ...polls.values()];
+      const items = [...polls.values()];
       document.getElementById("tabs").replaceChildren(...items.map((p) => {
         const b = document.createElement("button"); b.type = "button";
         b.className = "tab" + (active === p.id ? " active" : "");
-        b.textContent = p.q; b.onclick = () => { if (p.id === qa.id || p.id === stage.focus) { active = p.id; applyStage(); } };
-        if (p.id !== qa.id && p.id !== stage.focus) b.disabled = true;
+        b.textContent = p.q; b.onclick = () => { if (p.id === stage.focus) { active = p.id; applyStage(); } };
+        if (p.id !== stage.focus) b.disabled = true;
         return b;
       }));
     }
 
+    function renderChat() {
+      const list = [...msgs.values()].filter((m) => (m.pollId || "qa") === "qa");
+      chatFeed.replaceChildren(...list.map((m) => buildLi(code, m)));
+      if (chatOpen) { unreadChat = 0; chatBadge.hidden = true; }
+    }
+
+    function setChat(open) {
+      chatOpen = open;
+      chatPanel.hidden = !open;
+      chatToggle.setAttribute("aria-expanded", String(open));
+      chatToggle.classList.toggle("open", open);
+      if (open) renderChat();
+    }
+
     function applyStage() {
       const focus = stage.focus === "wall" ? "qa" : stage.focus;
-      if (active !== qa.id && active !== focus) active = focus;
-      const p = active === qa.id ? qa : polls.get(active);
+      if (active !== focus) active = focus;
+      const p = active === qa.id ? null : polls.get(active);
       tabs();
       if (p) {
-        const isQa = active === qa.id;
-        const textMode = isQa || p.type === "text";
+        const textMode = p.type === "text";
         feed.hidden = !textMode;
         composer.hidden = !textMode;
-        pollbox.hidden = isQa;
-        pollbox.replaceChildren(...(isQa ? [] : [renderPoll(code, p, true)]));
+        pollbox.hidden = false;
+        pollbox.replaceChildren(renderPoll(code, p, true));
         const list = [...msgs.values()].filter((m) => m.pollId === active);
         feed.replaceChildren(...list.map((m) => buildLi(code, m)));
       } else {
         pollbox.hidden = true;
         pollbox.replaceChildren();
+        feed.hidden = false;
+        composer.hidden = false;
+        feed.replaceChildren();
       }
+      renderChat();
     }
 
     connect(code, {
@@ -75,7 +104,7 @@
         if (d.stage) stage = d.stage;
         (d.qa ? [d.qa] : []).forEach((p) => Object.assign(qa, p));
         (d.polls || []).forEach((p) => polls.set(p.id, p));
-        active = stage.focus === "wall" ? qa.id : stage.focus;
+        active = stage.focus === "wall" || stage.focus === "qa" ? qa.id : stage.focus;
         applyStage();
       },
       onMsg: (m) => {
@@ -85,10 +114,12 @@
           const li = buildLi(code, m); feed.append(li);
           if (atBottom) li.scrollIntoView({ behavior: "smooth" });
         }
+        if ((m.pollId || "qa") === "qa" && !chatOpen) { unreadChat++; chatBadge.textContent = unreadChat; chatBadge.hidden = false; }
+        renderChat();
       },
-      onReact: ({ id, reactions }) => setCount(feed, id, reactions),
-      onDel: ({ id }) => { msgs.delete(id); feed.querySelector(`li[data-id="${id}"]`)?.remove(); },
-      onPin: ({ id, on }) => feed.querySelector(`li[data-id="${id}"]`)?.classList.toggle("pinned", on),
+      onReact: ({ id, reactions }) => { setCount(feed, id, reactions); setCount(chatFeed, id, reactions); },
+      onDel: ({ id }) => { msgs.delete(id); feed.querySelector(`li[data-id="${id}"]`)?.remove(); chatFeed.querySelector(`li[data-id="${id}"]`)?.remove(); },
+      onPin: ({ id, on }) => { feed.querySelector(`li[data-id="${id}"]`)?.classList.toggle("pinned", on); chatFeed.querySelector(`li[data-id="${id}"]`)?.classList.toggle("pinned", on); },
       onVote: ({ poll, counts }) => {
         const p = polls.get(poll); if (p) p.counts = counts;
         if (active === poll) {
@@ -113,6 +144,18 @@
     text.addEventListener("keydown", (e) => {
       if (e.isComposing || e.keyCode === 229) return; // IME 조합 중
       if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+    });
+    chatToggle.onclick = () => setChat(!chatOpen);
+    document.getElementById("chatClose").onclick = () => setChat(false);
+    const chatForm = document.getElementById("chatForm");
+    const chatText = document.getElementById("chatText");
+    chatForm.addEventListener("submit", async (e) => {
+      e.preventDefault(); const v = chatText.value.trim(); if (!v) return;
+      chatText.value = ""; if (!(await send(code, v, "qa"))) chatText.value = v;
+    });
+    chatText.addEventListener("keydown", (e) => {
+      if (e.isComposing || e.keyCode === 229) return;
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); chatForm.requestSubmit(); }
     });
   </script>
 </body>

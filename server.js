@@ -272,7 +272,7 @@ app.get("/api/:code", (req, res) => {
   const polls = normalized.polls.map((p) => ({ ...p, counts: p.type === "choice" ? pollCounts(req.params.code, p) : undefined }));
   const messages = visibleMessages(req.params.code);
   const currentStage = room(req.params.code).stage;
-  res.json({ ...pub, polls, qa: { id: QA_ID, q: "Audience Q&A", sort: normalized.qaSort, messages: messages.filter((m) => m.pollId === QA_ID) }, messages, stage: currentStage });
+  res.json({ ...pub, polls, qa: { id: QA_ID, q: "Chat Room", sort: normalized.qaSort, messages: messages.filter((m) => m.pollId === QA_ID) }, messages, stage: currentStage });
 });
 
 // SSE stream
