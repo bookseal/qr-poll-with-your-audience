@@ -19,7 +19,7 @@
 
     <nav class="admin-tabs" aria-label="Presenter views">
       <button id="pollsTab" class="admin-tab active" type="button">Polls</button>
-      <button id="chatTab" class="admin-tab" type="button">💬 Chat Room <span id="chatBadge" class="unread-label" hidden>Unread messages</span></button>
+      <button id="chatTab" class="admin-tab" type="button" aria-label="Open chat room">💬 <span id="chatBadge" class="unread-label" hidden></span></button>
     </nav>
 
     <section id="pollsPanel" class="panel">
@@ -45,7 +45,7 @@
     </section>
 
     <section id="chatPanel" class="panel" hidden>
-      <div class="panel-title">Chat Room <span id="mcount" class="count"></span></div>
+      <div class="panel-title">💬 <span id="mcount" class="count"></span></div>
       <ul id="feed" class="adminfeed"></ul>
     </section>
   </div>
@@ -89,7 +89,7 @@
     chatTab.onclick = () => setView(true);
 
     const stages = () => ["qa", ...pollOrder];
-    const label = (f) => (f === "qa" || f === "wall" ? "💬 Chat Room" : (polls.get(f)?.q || f));
+    const label = (f) => (f === "qa" || f === "wall" ? "💬" : (polls.get(f)?.q || f));
 
     async function setStage(focus, sort = (focus === "qa" ? stage.sort : (polls.get(focus)?.sort || "recent"))) {
       if (!key) return;
@@ -200,7 +200,7 @@
       },
       onMsg: (m) => {
         msgs.set(m.id, { reactions: 0, pinned: false, ...m }); renderMessages();
-        if ((m.pollId || "qa") === "qa" && !chatView) { unreadChat++; chatBadge.hidden = false; }
+        if ((m.pollId || "qa") === "qa" && !chatView) { unreadChat++; chatBadge.textContent = unreadChat; chatBadge.hidden = false; }
       },
       onReact: ({ id, reactions }) => { const m = msgs.get(id); if (m) { m.reactions = reactions; renderMessages(); } },
       onDel: ({ id }) => { msgs.delete(id); renderMessages(); },
