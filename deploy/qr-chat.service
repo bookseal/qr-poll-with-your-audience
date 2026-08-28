@@ -1,0 +1,16 @@
+[Unit]
+Description=QR Chat (minimal Slido clone)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/qr-chat
+Environment=PORT=3000
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
