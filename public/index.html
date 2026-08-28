@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QR Chat</title>
-  <link rel="stylesheet" href="/style.css?v=2" />
+  <link rel="stylesheet" href="/style.css?v=3" />
 </head>
 <body>
   <div class="center">
     <div class="card">
       <h1>💬 QR Chat</h1>
 
-      <p class="count">이벤트 코드로 입장</p>
+      <p class="count">🙋 <b>참여자</b> — 이벤트 코드로 입장</p>
       <form id="joinForm">
         <input id="code" inputmode="numeric" placeholder="예: 9587463" required autofocus />
         <button style="width:100%; margin-top:10px">입장</button>
@@ -19,12 +19,13 @@
 
       <div class="or">또는</div>
 
-      <p class="count">새 이벤트 만들기</p>
+      <p class="count">🎤 <b>강사</b> — 새 이벤트 만들기 (관리자 콘솔 생성)</p>
       <form id="newForm">
         <input id="title" maxlength="80" placeholder="이벤트 제목 (예: 우리 강의 Q&amp;A)" required />
         <button style="width:100%; margin-top:10px" class="ghost">만들기 →</button>
       </form>
       <p id="err" class="err"></p>
+      <p class="hint-sm">강사는 관리자 콘솔에서 질문을 띄우고 빔프로젝터 창을 엽니다. 학생은 QR만 찍으면 끝.</p>
     </div>
   </div>
 
@@ -48,7 +49,8 @@
         });
         const d = await r.json();
         if (!r.ok) { err.textContent = d.error || "생성 실패"; btn.disabled = false; return; }
-        location.href = "/present/" + d.code; // 발표자 화면(QR)로 이동
+        // 관리자 콘솔로 이동 (비밀키 포함). 이 URL을 잃어버리면 제어 못 하니 북마크 권장.
+        location.href = `/admin/${d.code}?key=${d.key}`;
       } catch {
         err.textContent = "네트워크 오류"; btn.disabled = false;
       }

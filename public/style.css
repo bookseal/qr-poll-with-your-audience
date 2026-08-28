@@ -136,3 +136,40 @@ button.ghost { background: transparent; border: 1px solid var(--accent); color: 
 .opt.voted:hover { outline: none; }
 .opt.mine { outline: 2px solid var(--accent); }
 .opt.mine .lab::after { content: " ✓"; color: var(--accent); }
+
+/* pinned 메시지 강조 */
+#feed li.pinned { outline: 2px solid var(--accent); background: #1e2a20; }
+#feed li.pinned .txt::before { content: "📌 "; }
+
+/* landing hint */
+.hint-sm { color: var(--muted); font-size: 12px; margin: 14px 0 0; line-height: 1.5; }
+
+/* --- 관리자 콘솔 --- */
+.wrap.admin { max-width: 860px; }
+.admin .code { margin-top: 4px; }
+.admin .code a { white-space: nowrap; }
+.panel { background: var(--card); border-radius: 12px; padding: 14px 16px; margin: 14px 0; }
+.panel-title { font-weight: 700; margin-bottom: 10px; }
+.stagebar { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  background: #232732; border: 1px solid #2f3441; color: var(--fg);
+  padding: 8px 12px; border-radius: 999px; cursor: pointer; font: inherit; max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.stage-nav { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.stage-nav .spacer { flex: 1; }
+.stage-nav button { background: #232732; border: 1px solid #2f3441; color: var(--fg); padding: 8px 14px; cursor: pointer; }
+.pollwrap { margin-bottom: 8px; }
+button.ghost.small, button.small { font-size: 13px; padding: 8px 12px; }
+.adminfeed { list-style: none; padding: 0; margin: 0; }
+.adminfeed li {
+  background: #20242d; border-radius: 10px; padding: 10px 12px; margin: 8px 0;
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.adminfeed li .txt { flex: 1; white-space: pre-wrap; word-break: break-word; }
+.adminfeed .rowmeta { flex: none; display: flex; align-items: center; gap: 8px; }
+.adminfeed .rowmeta .cnt { color: var(--muted); font-size: 13px; }
+.mini { background: #2b303b; border: 1px solid #3a4150; color: var(--fg); font-size: 12px; padding: 5px 9px; border-radius: 7px; cursor: pointer; }
+.mini:hover { border-color: var(--accent); }
+.mini.danger:hover { border-color: #e5484d; color: #e5484d; }

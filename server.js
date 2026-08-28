@@ -41,7 +41,8 @@ function newCode() {
 function room(code) {
   let r = rooms.get(code);
   if (r) return r;
-  r = { clients: new Set(), messages: [], byId: new Map(), votes: {} };
+  // stage: 강사가 프로젝터에 무엇을 어떻게 띄울지 (라이브 상태, 영속 안 함)
+  r = { clients: new Set(), messages: [], byId: new Map(), votes: {}, stage: { focus: "wall", sort: "recent" } };
   const f = path.join(DATA_DIR, `${code}.jsonl`);
   if (fs.existsSync(f)) {
     for (const line of fs.readFileSync(f, "utf8").split("\n")) {
@@ -54,8 +55,16 @@ function room(code) {
       } else if (o.t === "v") {
         // 투표 라인: poll별 옵션 카운트
         (r.votes[o.poll] ||= {})[o.opt] = (r.votes[o.poll]?.[o.opt] || 0) + 1;
+      } else if (o.t === "d") {
+        const m = r.byId.get(o.id);
+        if (m) m.deleted = true;
+      } else if (o.t === "p") {
+        const m = r.byId.get(o.id);
+        if (m) m.pinned = o.on;
       } else {
         o.reactions = o.reactions || 0;
+        o.deleted = false;
+        o.pinned = false;
         r.messages.push(o);
         r.byId.set(o.id, o);
       }
@@ -63,6 +72,36 @@ function room(code) {
   }
   rooms.set(code, r);
   return r;
+}
+
+// 삭제 안 된 메시지만 (모든 화면 공통 노출 집합)
+function visibleMessages(code) {
+  return room(code).messages.filter((m) => !m.deleted);
+}
+
+function delMessage(code, id) {
+  const m = room(code).byId.get(id);
+  if (!m || m.deleted) return false;
+  m.deleted = true;
+  append(code, { t: "d", id });
+  broadcast(code, { kind: "del", id });
+  return true;
+}
+
+function pinMessage(code, id, on) {
+  const m = room(code).byId.get(id);
+  if (!m) return false;
+  m.pinned = !!on;
+  append(code, { t: "p", id, on: m.pinned });
+  broadcast(code, { kind: "pin", id, on: m.pinned });
+  return true;
+}
+
+function setStage(code, focus, sort) {
+  const r = room(code);
+  r.stage = { focus, sort };
+  broadcast(code, { kind: "stage", ...r.stage });
+  return r.stage;
 }
 
 // poll의 옵션 개수만큼 카운트 배열로 정규화
@@ -92,7 +131,7 @@ function broadcast(code, obj) {
 
 function addMessage(code, text) {
   const r = room(code);
-  const msg = { id: r.messages.length + 1, text, ts: Date.now(), reactions: 0 };
+  const msg = { id: r.messages.length + 1, text, ts: Date.now(), reactions: 0, deleted: false, pinned: false };
   r.messages.push(msg);
   r.byId.set(msg.id, msg);
   append(code, { id: msg.id, text: msg.text, ts: msg.ts });
@@ -132,10 +171,17 @@ app.post("/new", (req, res) => {
     return res.status(403).json({ error: `이벤트가 가득 찼어요 (최대 ${MAX_EVENTS}개)` });
   const code = newCode();
   if (!code) return res.status(500).json({ error: "코드 생성 실패" });
-  fs.writeFileSync(path.join(EVENTS_DIR, `${code}.json`), JSON.stringify({ code, title }, null, 2));
+  const key = crypto.randomBytes(6).toString("hex"); // 관리자 비밀키
+  fs.writeFileSync(path.join(EVENTS_DIR, `${code}.json`), JSON.stringify({ code, title, adminKey: key }, null, 2));
   lastNew.set(ip, Date.now());
-  res.json({ code });
+  res.json({ code, key });
 });
+
+// 관리자 키 검증 (query.key 또는 body.key)
+function keyOk(meta, req) {
+  const k = req.query.key || req.body?.key;
+  return !!meta.adminKey && k === meta.adminKey;
+}
 
 app.get("/r/:code", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "join.html"))
@@ -143,13 +189,17 @@ app.get("/r/:code", (req, res) =>
 app.get("/present/:code", (req, res) =>
   res.sendFile(path.join(__dirname, "public", "present.html"))
 );
+app.get("/admin/:code", (req, res) =>
+  res.sendFile(path.join(__dirname, "public", "admin.html"))
+);
 
-// 이벤트 메타 + 최근 메시지 + poll 집계 (초기 로드용)
+// 이벤트 메타 + 최근 메시지 + poll 집계 + stage (초기 로드용)
 app.get("/api/:code", (req, res) => {
   const meta = eventMeta(req.params.code);
   if (!meta) return res.status(404).json({ error: "unknown event code" });
+  const { adminKey, ...pub } = meta; // adminKey는 절대 노출하지 않음
   const polls = (meta.polls || []).map((p) => ({ ...p, counts: pollCounts(req.params.code, p) }));
-  res.json({ ...meta, polls, messages: room(req.params.code).messages });
+  res.json({ ...pub, polls, messages: visibleMessages(req.params.code), stage: room(req.params.code).stage });
 });
 
 // SSE stream
@@ -206,6 +256,35 @@ app.post("/vote/:code/:poll/:opt", (req, res) => {
   res.json({ poll: poll.id, counts });
 });
 
+// --- 관리자 전용 (adminKey 필요) ---
+app.post("/admin/:code/delete/:id", (req, res) => {
+  const meta = eventMeta(req.params.code);
+  if (!meta) return res.status(404).json({ error: "unknown event code" });
+  if (!keyOk(meta, req)) return res.status(403).json({ error: "관리자 키 필요" });
+  const ok = delMessage(req.params.code, Number(req.params.id));
+  res.json({ ok });
+});
+
+app.post("/admin/:code/pin/:id", (req, res) => {
+  const meta = eventMeta(req.params.code);
+  if (!meta) return res.status(404).json({ error: "unknown event code" });
+  if (!keyOk(meta, req)) return res.status(403).json({ error: "관리자 키 필요" });
+  const ok = pinMessage(req.params.code, Number(req.params.id), req.body?.on);
+  res.json({ ok });
+});
+
+app.post("/admin/:code/stage", (req, res) => {
+  const meta = eventMeta(req.params.code);
+  if (!meta) return res.status(404).json({ error: "unknown event code" });
+  if (!keyOk(meta, req)) return res.status(403).json({ error: "관리자 키 필요" });
+  const focus = (req.body?.focus ?? "wall").toString();
+  const sort = req.body?.sort === "top" ? "top" : "recent";
+  // focus는 "wall" 또는 존재하는 poll id만 허용
+  if (focus !== "wall" && !(meta.polls || []).some((p) => p.id === focus))
+    return res.status(400).json({ error: "bad focus" });
+  res.json(setStage(req.params.code, focus, sort));
+});
+
 // QR (참가 URL 인코딩)
 app.get("/qr/:code.svg", async (req, res) => {
   const base = `${req.headers["x-forwarded-proto"] || req.protocol}://${req.get("host")}`;
@@ -243,6 +322,19 @@ function selftest() {
   console.assert(reloaded.messages.length === 2, "reload from jsonl");
   console.assert(reloaded.byId.get(1).reactions === 2, "reactions persist across reload");
   console.assert(JSON.stringify(pollCounts(code, poll)) === "[1,0,2]", "votes persist across reload");
+  // 삭제/고정/stage
+  addMessage(code, "삭제될 메시지");
+  console.assert(visibleMessages(code).length === 3, "3 visible before delete");
+  delMessage(code, 3);
+  console.assert(visibleMessages(code).length === 2, "hidden after delete");
+  pinMessage(code, 1, true);
+  console.assert(room(code).byId.get(1).pinned === true, "pinned");
+  rooms.delete(code);
+  const r2 = room(code);
+  console.assert(visibleMessages(code).length === 2, "delete persists across reload");
+  console.assert(r2.byId.get(1).pinned === true, "pin persists across reload");
+  console.assert(setStage(code, "wall", "top").sort === "top", "stage set");
+
   const nc = newCode();
   console.assert(/^\d{7}$/.test(nc) && !eventMeta(nc), "newCode: 7-digit, unused");
   console.assert(typeof eventCount() === "number", "eventCount");

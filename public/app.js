@@ -3,7 +3,7 @@ export const esc = encodeURIComponent;
 
 // code의 메타+기존 메시지 로드, 이후 SSE로 신규/리액션 수신.
 // onMsg(m): 메시지(초기 로드분 + 신규), onReact({id,reactions}): 리액션 갱신
-export async function connect(code, { onMeta, onMsg, onReact, onVote } = {}) {
+export async function connect(code, { onMeta, onMsg, onReact, onVote, onDel, onPin, onStage } = {}) {
   const r = await fetch(`/api/${esc(code)}`);
   if (!r.ok) {
     document.body.innerHTML = `<div class="center"><div class="card"><h1>없는 코드</h1><p>이벤트 코드 <b>${code}</b> 를 찾을 수 없어요.</p><a href="/">← 처음으로</a></div></div>`;
@@ -18,9 +18,31 @@ export async function connect(code, { onMeta, onMsg, onReact, onVote } = {}) {
     const o = JSON.parse(e.data);
     if (o.kind === "react") onReact?.(o);
     else if (o.kind === "vote") onVote?.(o);
+    else if (o.kind === "del") onDel?.(o);
+    else if (o.kind === "pin") onPin?.(o);
+    else if (o.kind === "stage") onStage?.(o);
     else onMsg?.(o);
   };
   return es;
+}
+
+// 고정 먼저, 그다음 정렬(recent: 최신, top: 좋아요순)
+export function sortMessages(list, sort) {
+  const rank =
+    sort === "top"
+      ? (a, b) => b.reactions - a.reactions || b.ts - a.ts
+      : (a, b) => b.ts - a.ts;
+  return [...list].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || rank(a, b));
+}
+
+// 관리자 액션 (key는 body로 전달, 서버가 검증)
+export async function adminAction(code, key, pathPart, body = {}) {
+  const r = await fetch(`/admin/${esc(code)}/${pathPart}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key, ...body }),
+  });
+  return r.ok ? r.json() : null;
 }
 
 export async function send(code, text) {
@@ -40,6 +62,7 @@ export async function react(code, id) {
 export function buildLi(code, m) {
   const li = document.createElement("li");
   li.dataset.id = m.id;
+  if (m.pinned) li.classList.add("pinned");
   const txt = document.createElement("span");
   txt.className = "txt";
   txt.textContent = m.text;

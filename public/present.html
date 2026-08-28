@@ -3,69 +3,77 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>QR Chat · 발표자</title>
-  <link rel="stylesheet" href="/style.css?v=2" />
+  <title>QR Chat · 빔프로젝터</title>
+  <link rel="stylesheet" href="/style.css?v=3" />
 </head>
 <body>
   <div class="present">
     <aside class="qr">
       <img id="qr" alt="QR" style="width:100%" />
       <div class="big" id="code"></div>
-      <div class="hint">폰으로 QR을 찍어 익명 참여</div>
+      <div class="hint">폰으로 QR을 찍어<br />익명으로 참여하세요</div>
     </aside>
     <main>
       <header>
         <h1 id="title">…</h1>
-        <div class="count"><span id="n">0</span> messages ·
-          <button id="sort" type="button" class="sortbtn">최신순</button>
-        </div>
+        <div class="count" id="sub"></div>
       </header>
-      <div id="polls"></div>
+      <div id="pollbox"></div>
       <ul id="feed"></ul>
     </main>
   </div>
 
   <script type="module">
-    import { connect, buildLi, renderPoll, updatePoll } from "/app.js?v=2";
+    import { connect, buildLi, renderPoll, updatePoll, sortMessages } from "/app.js?v=3";
     const code = location.pathname.split("/").pop();
     const feed = document.getElementById("feed");
-    const pollsEl = document.getElementById("polls");
+    const pollbox = document.getElementById("pollbox");
+    const sub = document.getElementById("sub");
     document.getElementById("code").textContent = code;
     document.getElementById("qr").src = `/qr/${encodeURIComponent(code)}.svg`;
 
-    const msgs = new Map(); // id -> {id,text,ts,reactions}
-    let sort = "recent";    // recent | top
+    const msgs = new Map();
+    const polls = new Map();
+    let stage = { focus: "wall", sort: "recent" };
 
     function render() {
-      const arr = [...msgs.values()].sort(
-        sort === "top"
-          ? (a, b) => b.reactions - a.reactions || b.ts - a.ts
-          : (a, b) => b.ts - a.ts
-      );
-      feed.replaceChildren(...arr.map((m) => buildLi(code, m)));
-      document.getElementById("n").textContent = msgs.size;
+      if (stage.focus === "wall") {
+        pollbox.hidden = true;
+        feed.hidden = false;
+        const arr = sortMessages([...msgs.values()], stage.sort);
+        feed.replaceChildren(...arr.map((m) => buildLi(code, m)));
+        sub.textContent = `${msgs.size} messages · ${stage.sort === "top" ? "인기순" : "최신순"}`;
+      } else {
+        feed.hidden = true;
+        pollbox.hidden = false;
+        const p = polls.get(stage.focus);
+        if (p) {
+          pollbox.replaceChildren(renderPoll(code, p, false));
+          const total = (p.counts || []).reduce((a, b) => a + b, 0);
+          sub.textContent = `${total} votes`;
+        }
+      }
     }
-
-    document.getElementById("sort").onclick = (e) => {
-      sort = sort === "recent" ? "top" : "recent";
-      e.target.textContent = sort === "recent" ? "최신순" : "인기순 👍";
-      render();
-    };
 
     connect(code, {
       onMeta: (d) => {
         document.getElementById("title").textContent = d.title;
-        (d.polls || []).forEach((p) => pollsEl.append(renderPoll(code, p, false)));
+        (d.polls || []).forEach((p) => polls.set(p.id, p));
+        if (d.stage) stage = d.stage;
+        render();
       },
+      onMsg: (m) => { msgs.set(m.id, { reactions: 0, pinned: false, ...m }); render(); },
+      onReact: ({ id, reactions }) => { const m = msgs.get(id); if (m) { m.reactions = reactions; render(); } },
+      onDel: ({ id }) => { msgs.delete(id); render(); },
+      onPin: ({ id, on }) => { const m = msgs.get(id); if (m) { m.pinned = on; render(); } },
       onVote: ({ poll, counts }) => {
-        const w = pollsEl.querySelector(`.poll[data-poll="${poll}"]`);
-        if (w) updatePoll(w, counts);
+        const p = polls.get(poll); if (p) p.counts = counts;
+        if (stage.focus === poll) {
+          const w = pollbox.querySelector(`.poll[data-poll="${poll}"]`);
+          if (w) updatePoll(w, counts);
+        }
       },
-      onMsg: (m) => { msgs.set(m.id, { ...m, reactions: m.reactions || 0 }); render(); },
-      onReact: ({ id, reactions }) => {
-        const m = msgs.get(id);
-        if (m) { m.reactions = reactions; render(); }
-      },
+      onStage: (s) => { stage = { focus: s.focus, sort: s.sort }; render(); },
     });
   </script>
 </body>
