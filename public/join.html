@@ -3,19 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>QR Chat</title>
-  <link rel="stylesheet" href="/style.css?v=3" />
+  <title>QR Chat · 청중</title>
+  <link rel="stylesheet" href="/style.css?v=4" />
 </head>
 <body>
   <div class="wrap">
     <header>
       <h1 id="title">…</h1>
-      <div class="code">🙋 익명 참여 · 코드 <span id="code"></span></div>
+      <div class="code">🙋 청중 · 익명 참여 · 코드 <span id="code"></span></div>
     </header>
-    <div id="polls"></div>
+    <div id="pollbox"></div>
     <ul id="feed"></ul>
   </div>
-  <div class="composer">
+  <div class="composer" id="composer">
     <form class="inner" id="form">
       <textarea id="text" rows="1" maxlength="500" placeholder="익명으로 남기기…" required></textarea>
       <button id="send">보내기</button>
@@ -23,30 +23,56 @@
   </div>
 
   <script type="module">
-    import { connect, send, buildLi, setCount, renderPoll, updatePoll } from "/app.js?v=3";
+    import { connect, send, buildLi, setCount, renderPoll, updatePoll } from "/app.js?v=4";
     const code = location.pathname.split("/").pop();
     const feed = document.getElementById("feed");
-    const pollsEl = document.getElementById("polls");
+    const pollbox = document.getElementById("pollbox");
+    const composer = document.getElementById("composer");
     document.getElementById("code").textContent = code;
+
+    const polls = new Map();
+    let stage = { focus: "wall", sort: "recent" };
+
+    // 관리자가 focus한 것만 보여준다 (Slido처럼): 메시지 월 ↔ 지금 띄운 질문
+    function applyStage() {
+      const p = stage.focus !== "wall" && polls.get(stage.focus);
+      if (p) {
+        feed.hidden = true;
+        composer.hidden = true;
+        pollbox.hidden = false;
+        pollbox.replaceChildren(renderPoll(code, p, true)); // 투표 가능
+      } else {
+        pollbox.hidden = true;
+        pollbox.replaceChildren();
+        feed.hidden = false;
+        composer.hidden = false;
+      }
+    }
 
     connect(code, {
       onMeta: (d) => {
         document.getElementById("title").textContent = d.title;
-        (d.polls || []).forEach((p) => pollsEl.append(renderPoll(code, p, true)));
-      },
-      onVote: ({ poll, counts }) => {
-        const w = pollsEl.querySelector(`.poll[data-poll="${poll}"]`);
-        if (w) updatePoll(w, counts);
+        (d.polls || []).forEach((p) => polls.set(p.id, p));
+        if (d.stage) stage = d.stage;
+        applyStage();
       },
       onMsg: (m) => {
         const atBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 60;
         const li = buildLi(code, m);
         feed.append(li);
-        if (atBottom) li.scrollIntoView({ behavior: "smooth" });
+        if (atBottom && !feed.hidden) li.scrollIntoView({ behavior: "smooth" });
       },
       onReact: ({ id, reactions }) => setCount(feed, id, reactions),
       onDel: ({ id }) => feed.querySelector(`li[data-id="${id}"]`)?.remove(),
       onPin: ({ id, on }) => feed.querySelector(`li[data-id="${id}"]`)?.classList.toggle("pinned", on),
+      onVote: ({ poll, counts }) => {
+        const p = polls.get(poll); if (p) p.counts = counts;
+        if (stage.focus === poll) {
+          const w = pollbox.querySelector(`.poll[data-poll="${poll}"]`);
+          if (w) updatePoll(w, counts);
+        }
+      },
+      onStage: (s) => { stage = { focus: s.focus, sort: s.sort }; applyStage(); },
     });
 
     const form = document.getElementById("form");

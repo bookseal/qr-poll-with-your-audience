@@ -6,6 +6,7 @@
   --accent: #198038;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; } /* display:flex 등이 hidden 속성을 덮지 않도록 */
 body {
   margin: 0;
   font: 16px/1.5 system-ui, -apple-system, "Apple SD Gothic Neo", sans-serif;
