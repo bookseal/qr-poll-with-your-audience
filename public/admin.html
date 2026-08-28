@@ -39,7 +39,7 @@
         </section>
 
         <section id="chatPanel" class="panel" hidden>
-          <div class="panel-title">💬 <span id="mcount" class="count"></span></div>
+          <div class="panel-title">💬 <span id="mcount" class="count"></span><button id="archiveToggle" class="mini" type="button">Show archived</button></div>
           <ul id="feed" class="adminfeed"></ul>
         </section>
       </main>
@@ -71,6 +71,7 @@
     let stage = { focus: "qa", sort: "recent" };
     let chatView = false;
     let unreadChat = 0;
+    let showArchived = false;
 
     function setView(chat) {
       chatView = chat;
@@ -84,6 +85,11 @@
 
     document.getElementById("pollsTab").onclick = () => setView(false);
     chatTab.onclick = () => setView(true);
+    document.getElementById("archiveToggle").onclick = () => {
+      showArchived = !showArchived;
+      document.getElementById("archiveToggle").textContent = showArchived ? "Show active" : "Show archived";
+      renderMessages();
+    };
 
     const stages = () => [...pollOrder];
     const label = (f) => polls.get(f)?.q || f;
@@ -131,8 +137,9 @@
       pin.textContent = m.pinned ? "Unpin" : "Pin";
       pin.onclick = () => adminAction(code, key, `pin/${m.id}`, { on: !m.pinned });
       const del = document.createElement("button"); del.type = "button"; del.className = "mini danger";
-      del.textContent = "Delete";
-      del.onclick = () => { if (confirm("Hide this response?")) adminAction(code, key, `delete/${m.id}`); };
+      del.textContent = m.deleted ? "Archived" : "Archive";
+      del.disabled = m.deleted;
+      del.onclick = () => { if (confirm("Archive this message?")) adminAction(code, key, `archive/${m.id}`); };
       meta.append(cnt, pin, del);
       li.append(txt, meta);
       return li;
@@ -140,9 +147,9 @@
 
     function renderMessages() {
       const pollId = chatView || stage.focus === "wall" ? "qa" : stage.focus;
-      const arr = sortMessages([...msgs.values()].filter((m) => (m.pollId || "qa") === pollId), stage.sort);
+      const arr = sortMessages([...msgs.values()].filter((m) => (m.pollId || "qa") === pollId && !!m.deleted === showArchived), stage.sort);
       feed.replaceChildren(...arr.map(msgRow));
-      document.getElementById("mcount").textContent = `(${msgs.size})`;
+      document.getElementById("mcount").textContent = `(${arr.length})`;
     }
 
     function renderPolls() {
@@ -201,7 +208,7 @@
         if ((m.pollId || "qa") === "qa" && !chatView) { unreadChat++; chatBadge.textContent = unreadChat; chatBadge.hidden = false; }
       },
       onReact: ({ id, reactions }) => { const m = msgs.get(id); if (m) { m.reactions = reactions; renderMessages(); } },
-      onDel: ({ id }) => { msgs.delete(id); renderMessages(); },
+      onDel: ({ id }) => { const m = msgs.get(id); if (m) m.deleted = true; renderMessages(); },
       onPin: ({ id, on }) => { const m = msgs.get(id); if (m) { m.pinned = on; renderMessages(); } },
       onVote: ({ poll, counts }) => {
         const p = polls.get(poll); if (p) p.counts = counts;
@@ -211,6 +218,16 @@
       onStage: (s) => { stage = { focus: s.focus, sort: s.sort }; renderStageBar(); renderPolls(); renderMessages(); },
       onPolls: (items) => { polls.clear(); pollOrder = items.map((p) => (polls.set(p.id, p), p.id)); renderStageBar(); renderPolls(); },
     });
+
+    async function loadAdminMessages() {
+      if (!key) return;
+      const r = await fetch(`/admin/${encodeURIComponent(code)}/messages?key=${encodeURIComponent(key)}`);
+      if (!r.ok) return;
+      const data = await r.json();
+      data.messages.forEach((m) => msgs.set(m.id, m));
+      renderMessages();
+    }
+    loadAdminMessages();
   </script>
 </body>
 </html>

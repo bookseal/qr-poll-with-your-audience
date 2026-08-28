@@ -221,7 +221,8 @@ button.ghost { background: var(--card); border: 1px solid var(--accent); color: 
 .admin .code { margin-top: 4px; }
 .admin .code a { white-space: nowrap; }
 .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; margin: 14px 0; box-shadow: 0 8px 24px var(--shadow); }
-.panel-title { font-weight: 700; margin-bottom: 10px; }
+.panel-title { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 10px; }
+.panel-title .mini { margin-left: auto; }
 .stagebar { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
   background: var(--bg2); border: 1px solid var(--line); color: var(--fg);

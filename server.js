@@ -340,7 +340,14 @@ app.post("/vote/:code/:poll/:opt", (req, res) => {
 });
 
 // --- 관리자 전용 (adminKey 필요) ---
-app.post("/admin/:code/delete/:id", (req, res) => {
+app.get("/admin/:code/messages", (req, res) => {
+  const meta = eventMeta(req.params.code);
+  if (!meta) return res.status(404).json({ error: "unknown event code" });
+  if (!keyOk(meta, req)) return res.status(403).json({ error: "An admin key is required." });
+  res.json({ messages: room(req.params.code).messages });
+});
+
+app.post("/admin/:code/archive/:id", (req, res) => {
   const meta = eventMeta(req.params.code);
   if (!meta) return res.status(404).json({ error: "unknown event code" });
   if (!keyOk(meta, req)) return res.status(403).json({ error: "An admin key is required." });
