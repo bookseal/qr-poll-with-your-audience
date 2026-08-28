@@ -78,7 +78,7 @@ header .code { color: var(--muted); font-size: 13px; }
 .chat-toggle {
   position: fixed; top: 50%; right: 18px; z-index: 20;
   display: grid; place-items: center; width: 106px; height: 42px; padding: 0;
-  border: 1px solid rgba(255, 255, 255, .7); border-radius: 999px; background: var(--accent); color: #fff;
+  border: 1px solid rgba(255, 255, 255, .7); border-radius: 10px; background: var(--accent); color: #fff;
   box-shadow: 0 7px 0 rgba(170, 42, 30, .28), 0 12px 24px var(--shadow);
   transform: translateY(-50%); font-weight: 800; font-size: 12px; text-decoration: none; cursor: pointer;
 }
