@@ -28,17 +28,6 @@
 
       <main class="admin-content">
         <section id="pollsPanel" class="panel">
-          <div class="panel-title">Now on projector</div>
-          <div id="stagebar" class="stagebar"></div>
-          <div class="stage-nav">
-            <button id="prev" type="button">◀ Previous</button>
-            <button id="next" type="button">Next ▶</button>
-            <span class="spacer"></span>
-            <button id="sort" type="button" class="sortbtn">Recent</button>
-          </div>
-        </section>
-
-        <section class="panel">
           <div class="panel-title">Polls</div>
           <form id="pollform" class="pollform">
             <input id="pollq" placeholder="Question" required />
@@ -76,7 +65,6 @@
     const chatBadge = document.getElementById("chatBadge");
     const sidebarItems = document.getElementById("sidebarItems");
     const pollsEl = document.getElementById("polls");
-    const stagebar = document.getElementById("stagebar");
     const msgs = new Map();
     const polls = new Map();
     let pollOrder = [];        // poll id 순서
@@ -125,15 +113,6 @@
     }
 
     function renderStageBar() {
-      stagebar.replaceChildren(...stages().map((f) => {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.className = "chip" + (f === stage.focus ? " active" : "");
-        b.textContent = label(f);
-        b.onclick = () => setStage(f);
-        return b;
-      }));
-      document.getElementById("sort").textContent = stage.sort === "top" ? "Popular 👍" : "Recent";
       renderSidebar();
     }
 
@@ -208,15 +187,6 @@
       await adminAction(code, key, "poll/create", { type, q: document.getElementById("pollq").value.trim(), options });
       e.target.reset();
     };
-
-    document.getElementById("sort").onclick = () =>
-      setStage(stage.focus, stage.sort === "top" ? "recent" : "top");
-    const step = (d) => {
-      const s = stages(); const i = s.indexOf(stage.focus);
-      setStage(s[(i + d + s.length) % s.length]);
-    };
-    document.getElementById("prev").onclick = () => step(-1);
-    document.getElementById("next").onclick = () => step(1);
 
     connect(code, {
       onMeta: (d) => {
