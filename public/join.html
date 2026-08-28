@@ -49,6 +49,8 @@
     chatToggle.hidden = chatMode;
     chatPanel.hidden = !chatMode;
     chatToggle.addEventListener("click", markChatRead);
+    document.getElementById("chatClose").addEventListener("click", markChatRead);
+    if (chatMode) markChatRead();
 
     function tabs() {
       const items = [...polls.values()];
