@@ -1,7 +1,7 @@
 # 배포 (ssh prod + Cloudflare Tunnel)
 
 대상: Ubuntu 20.04 (aarch64, Oracle Cloud), Node 18. 앱은 단일 Node 프로세스(포트 3000).
-공개 도메인: **https://qr-chat.physical-spark.com**
+공개 도메인: **https://qr-poll.physical-spark.com**
 
 > 이 서버는 포트 80/443을 k8s ingress가 점유해서 nginx 리버스 프록시 대신
 > **Cloudflare Tunnel**로 붙였다. 인바운드 포트/방화벽/Oracle 보안목록을 전부 우회하고
@@ -32,7 +32,7 @@ cloudflared tunnel login
 
 # 터널 생성 + DNS 자동 등록(CNAME)
 cloudflared tunnel create qr-chat
-cloudflared tunnel route dns qr-chat qr-chat.physical-spark.com
+cloudflared tunnel route dns qr-chat qr-poll.physical-spark.com
 ```
 
 `/etc/cloudflared/config.yml` (deploy/cloudflared-config.example.yml 참고):
@@ -40,7 +40,7 @@ cloudflared tunnel route dns qr-chat qr-chat.physical-spark.com
 tunnel: <TUNNEL_ID>
 credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
 ingress:
-  - hostname: qr-chat.physical-spark.com
+  - hostname: qr-poll.physical-spark.com
     service: http://localhost:3000
   - service: http_status:404
 ```
@@ -53,9 +53,9 @@ sudo systemctl enable --now cloudflared
 
 ## 3. 확인
 ```bash
-curl -s https://qr-chat.physical-spark.com/api/9587463 | head
+curl -s https://qr-poll.physical-spark.com/api/9587463 | head
 ```
-- 발표자: https://qr-chat.physical-spark.com/present/9587463
+- 발표자: https://qr-poll.physical-spark.com/present/9587463
 - 폰으로 QR 스캔 → `/r/9587463` → 익명 전송 → 발표자 화면 실시간 반영
 
 ## 업데이트

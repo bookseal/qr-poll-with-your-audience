@@ -53,9 +53,9 @@ deploy/              systemd + nginx + 배포 가이드
 - 실시간: **SSE** (WebSocket 라이브러리 불필요)
 - 저장: append-only **JSONL** 파일 (동시성 필요해지면 SQLite로 승급)
 
-## 배포 — **라이브**: https://qr-chat.physical-spark.com
+## 배포 — **라이브**: https://qr-poll.physical-spark.com
 `ssh prod`(Ubuntu·Node18)에 systemd로 앱을 띄우고 **Cloudflare Tunnel**로
-`qr-chat.physical-spark.com` 연결 → [`deploy/DEPLOY.md`](deploy/DEPLOY.md).
+`qr-poll.physical-spark.com` 연결 → [`deploy/DEPLOY.md`](deploy/DEPLOY.md).
 (포트 80/443을 k8s가 점유해 nginx 대신 tunnel 사용 — 인바운드 포트 오픈 불필요)
 
 ### Vercel도 되나요?

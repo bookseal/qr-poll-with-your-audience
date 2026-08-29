@@ -3,6 +3,6 @@
 tunnel: <TUNNEL_ID>
 credentials-file: /etc/cloudflared/<TUNNEL_ID>.json
 ingress:
-  - hostname: qr-chat.physical-spark.com
+  - hostname: qr-poll.physical-spark.com
     service: http://localhost:3000
   - service: http_status:404
