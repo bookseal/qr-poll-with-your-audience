@@ -261,4 +261,8 @@ button.ghost.small, button.small { font-size: 13px; padding: 8px 12px; }
   .admin-tab { padding: 8px 10px; }
 }
 @media (max-width: 620px) { .chat-toggle { top: 12px; right: 12px; width: 98px; height: 40px; font-size: 12px; } .chat-panel { top: 12px; right: 12px; width: calc(100vw - 24px); max-height: calc(100dvh - 24px); } }
+.export-bar { margin-top: 18px; text-align: center; }
+.export-bar a { color: var(--muted); font-size: 13px; }
+.export-bar a:hover { color: var(--accent); }
+
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

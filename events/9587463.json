@@ -1,0 +1,22 @@
+{
+  "code": "9587463",
+  "title": "E-WAVE Academy · MVP Build (0827)",
+  "adminKey": "5694653e4805",
+  "polls": [
+    {
+      "id": "mvp-progress",
+      "type": "choice",
+      "q": "🚦 How far along is your MVP?",
+      "options": [
+        "Just an idea",
+        "Planning / design",
+        "Building now",
+        "Almost done",
+        "Already shipped"
+      ],
+      "sort": "recent",
+      "order": 0
+    }
+  ],
+  "qaSort": "recent"
+}

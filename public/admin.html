@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QR Chat · Presenter Console</title>
-  <link rel="stylesheet" href="/style.css?v=4" />
+  <link rel="stylesheet" href="/style.css?v=7" />
 </head>
 <body>
   <div class="wrap admin">
@@ -42,12 +42,14 @@
           <div class="panel-title">Chat Room <span id="mcount" class="count"></span><button id="archiveToggle" class="mini" type="button">Show archived</button></div>
           <ul id="feed" class="adminfeed"></ul>
         </section>
+
+        <div class="export-bar"><a id="exportBtn" href="#" title="Download poll results and chat as a text file">⬇ Export results (.txt)</a></div>
       </main>
     </div>
   </div>
 
   <script type="module">
-    import { connect, renderPoll, updatePoll, sortMessages, adminAction } from "/app.js?v=6";
+    import { connect, renderPoll, updatePoll, sortMessages, adminAction } from "/app.js?v=7";
     const parts = location.pathname.split("/");
     const code = parts.pop();
     const key = new URLSearchParams(location.search).get("key") || "";
@@ -151,7 +153,7 @@
     }
 
     function renderMessages() {
-      const pollId = chatView || stage.focus === "wall" ? "qa" : stage.focus;
+      const pollId = chatView ? "qa" : stage.focus;
       const arr = sortMessages([...msgs.values()].filter((m) => (m.pollId || "qa") === pollId && !!m.deleted === showArchived), stage.sort);
       feed.replaceChildren(...arr.map(msgRow));
       document.getElementById("mcount").textContent = `(${arr.length})`;
@@ -228,6 +230,45 @@
       renderMessages();
     }
     loadAdminMessages();
+
+    // Export: poll results + chat room as a plain .txt for keeping records.
+    function exportTxt() {
+      const out = [];
+      out.push(document.getElementById("title").textContent.trim());
+      out.push(`Event code: ${code}`);
+      out.push(`Exported: ${new Date().toLocaleString()}`);
+      out.push("");
+      for (const id of pollOrder) {
+        const p = polls.get(id);
+        if (!p) continue;
+        out.push(`## ${p.q}`);
+        if (p.type === "choice") {
+          const counts = p.counts || [];
+          const total = counts.reduce((a, b) => a + b, 0);
+          p.options.forEach((o, i) => {
+            const c = counts[i] || 0;
+            out.push(`  - ${o}: ${c} (${total ? Math.round((c / total) * 100) : 0}%)`);
+          });
+          out.push(`  Total votes: ${total}`);
+        } else {
+          [...msgs.values()].filter((m) => m.pollId === id && !m.deleted)
+            .forEach((m) => out.push(`  - ${m.text}  [👍 ${m.reactions || 0}]`));
+        }
+        out.push("");
+      }
+      out.push("## Chat Room");
+      [...msgs.values()].filter((m) => (m.pollId || "qa") === "qa" && !m.deleted)
+        .sort((a, b) => a.ts - b.ts)
+        .forEach((m) => out.push(`  - ${m.text}  [👍 ${m.reactions || 0}]`));
+
+      const blob = new Blob([out.join("\n")], { type: "text/plain;charset=utf-8" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `qr-chat-${code}.txt`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+    document.getElementById("exportBtn").addEventListener("click", (e) => { e.preventDefault(); exportTxt(); });
   </script>
 </body>
 </html>

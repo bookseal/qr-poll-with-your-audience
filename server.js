@@ -133,10 +133,6 @@ function visibleMessages(code) {
   return room(code).messages.filter((m) => !m.deleted);
 }
 
-function visibleMessagesFor(code, pollId) {
-  return visibleMessages(code).filter((m) => m.pollId === pollId);
-}
-
 function delMessage(code, id) {
   const m = room(code).byId.get(id);
   if (!m || m.deleted) return false;
@@ -322,7 +318,8 @@ app.get("/api/:code", (req, res) => {
   const polls = normalized.polls.map((p) => ({ ...p, counts: p.type === "choice" ? pollCounts(req.params.code, p) : undefined }));
   const messages = visibleMessages(req.params.code);
   const currentStage = room(req.params.code).stage;
-  res.json({ ...pub, polls, qa: { id: QA_ID, q: "Chat Room", sort: normalized.qaSort, messages: messages.filter((m) => m.pollId === QA_ID) }, messages, stage: currentStage });
+  // qa: Chat Room 채널 메타(제목/정렬)만. 메시지는 messages에 이미 있어 중복 전송 안 함.
+  res.json({ ...pub, polls, qa: { id: QA_ID, q: "Chat Room", sort: normalized.qaSort }, messages, stage: currentStage });
 });
 
 // SSE stream
@@ -425,8 +422,7 @@ app.post("/admin/:code/stage", (req, res) => {
   const meta = eventMeta(req.params.code);
   if (!meta) return res.status(404).json({ error: "unknown event code" });
   if (!keyOk(meta, req)) return res.status(403).json({ error: "An admin key is required." });
-  const requestedFocus = (req.body?.focus ?? QA_ID).toString();
-  const focus = requestedFocus === "wall" ? QA_ID : requestedFocus;
+  const focus = (req.body?.focus ?? QA_ID).toString();
   const sort = req.body?.sort === "top" ? "top" : "recent";
   if (focus !== QA_ID && !(meta.polls || []).some((p) => p.id === focus))
     return res.status(400).json({ error: "bad focus" });
@@ -547,7 +543,7 @@ function selftest() {
   const r2 = room(code);
   console.assert(visibleMessages(code).length === 2, "delete persists across reload");
   console.assert(r2.byId.get(1).pinned === true, "pin persists across reload");
-  console.assert(setStage(code, "wall", "top").sort === "top", "stage set");
+  console.assert(setStage(code, QA_ID, "top").sort === "top", "stage set");
 
   const nc = newCode();
   console.assert(/^\d{7}$/.test(nc) && !eventMeta(nc), "newCode: 7-digit, unused");
