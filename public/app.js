@@ -57,7 +57,7 @@ export async function send(code, text, pollId = "qa") {
 }
 
 function reactionToken() {
-  const key = "qr-chat:reaction-device";
+  const key = "qr-poll:reaction-device";
   let token = localStorage.getItem(key);
   if (!token) {
     token = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -67,7 +67,7 @@ function reactionToken() {
 }
 
 export async function react(code, id) {
-  const key = `qr-chat:reacted:${code}:${id}`;
+  const key = `qr-poll:reacted:${code}:${id}`;
   if (localStorage.getItem(key)) return;
   const r = await fetch(`/react/${esc(code)}/${id}`, {
     method: "POST",
@@ -88,7 +88,7 @@ export function buildLi(code, m) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = "react";
-  const alreadyReacted = localStorage.getItem(`qr-chat:reacted:${code}:${m.id}`);
+  const alreadyReacted = localStorage.getItem(`qr-poll:reacted:${code}:${m.id}`);
   if (alreadyReacted) { btn.classList.add("reacted"); btn.disabled = true; }
   btn.innerHTML = `👍 <b>${m.reactions || 0}</b>`;
   btn.onclick = async () => { await react(code, m.id); btn.classList.add("reacted"); btn.disabled = true; };
@@ -103,7 +103,7 @@ export function setCount(root, id, n) {
 }
 
 export async function vote(code, pollId, opt, undo = false) {
-  const tokenKey = "qr-chat:vote-device";
+  const tokenKey = "qr-poll:vote-device";
   let token = localStorage.getItem(tokenKey);
   if (!token) {
     token = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>QR Chat · Presenter Console</title>
-  <link rel="stylesheet" href="/style.css?v=7" />
+  <title>QR Poll · Presenter Console</title>
+  <link rel="stylesheet" href="/style.css?v=8" />
 </head>
 <body>
   <div class="wrap admin">
@@ -49,7 +49,7 @@
   </div>
 
   <script type="module">
-    import { connect, renderPoll, updatePoll, sortMessages, adminAction } from "/app.js?v=7";
+    import { connect, renderPoll, updatePoll, sortMessages, adminAction } from "/app.js?v=8";
     const parts = location.pathname.split("/");
     const code = parts.pop();
     const key = new URLSearchParams(location.search).get("key") || "";
@@ -66,7 +66,7 @@
     const chatTab = document.getElementById("chatTab");
     const chatBadge = document.getElementById("chatBadge");
     const sidebarItems = document.getElementById("sidebarItems");
-    const adminChatReadKey = `qr-chat:admin-chat-read:${code}`;
+    const adminChatReadKey = `qr-poll:admin-chat-read:${code}`;
     const pollsEl = document.getElementById("polls");
     const msgs = new Map();
     const polls = new Map();
@@ -264,7 +264,7 @@
       const blob = new Blob([out.join("\n")], { type: "text/plain;charset=utf-8" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `qr-chat-${code}.txt`;
+      a.download = `qr-poll-${code}.txt`;
       a.click();
       URL.revokeObjectURL(a.href);
     }

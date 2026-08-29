@@ -1,5 +1,5 @@
 {
-  "name": "qr-chat-with-your-audience",
+  "name": "qr-poll-with-your-audience",
   "version": "0.1.0",
   "description": "QR로 입장하는 익명 실시간 채팅 — 최소 Slido 클론",
   "type": "module",

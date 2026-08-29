@@ -569,5 +569,5 @@ if (process.argv.includes("--selftest")) {
   selftest();
 } else {
   const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`qr-chat on :${PORT}`));
+  app.listen(PORT, () => console.log(`qr-poll on :${PORT}`));
 }

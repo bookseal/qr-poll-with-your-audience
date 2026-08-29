@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>QR Chat · Audience</title>
-  <link rel="stylesheet" href="/style.css?v=7" />
+  <title>QR Poll · Audience</title>
+  <link rel="stylesheet" href="/style.css?v=8" />
 </head>
 <body>
   <div class="wrap">
@@ -23,7 +23,7 @@
     <form class="chat-composer" id="chatForm"><textarea id="chatText" rows="1" maxlength="500" placeholder="Say anything…" required></textarea><button id="chatSend">Send</button></form>
   </aside>
   <script type="module">
-    import { connect, send, buildLi, setCount, renderPoll, updatePoll } from "/app.js?v=7";
+    import { connect, send, buildLi, setCount, renderPoll, updatePoll } from "/app.js?v=8";
     const pathParts = location.pathname.split("/").filter(Boolean);
     const chatMode = pathParts.at(-1) === "chat";
     const code = chatMode ? pathParts.at(-2) : pathParts.at(-1);
@@ -41,7 +41,7 @@
     const chatPanel = document.getElementById("chatPanel");
     const chatToggle = document.getElementById("chatToggle");
     const chatFeed = document.getElementById("chatFeed");
-    const chatReadKey = `qr-chat:chat-read:${code}`;
+    const chatReadKey = `qr-poll:chat-read:${code}`;
     const markChatRead = () => localStorage.setItem(chatReadKey, String(Date.now()));
     document.body.classList.toggle("chat-page", chatMode);
     chatToggle.href = `/r/${encodeURIComponent(code)}/chat`;

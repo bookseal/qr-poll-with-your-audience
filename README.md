@@ -1,4 +1,4 @@
-# 💬 QR Chat — a minimal Slido clone
+# 💬 QR Poll — a minimal Slido clone
 
 강의장에서 **QR만 찍으면 가입·설치·로그인 없이 익명으로** 실시간 참여하는 채팅 월.
 [Slido](https://www.slido.com/)에서 딱 필요한 만큼만 떼어낸 최소 버전이다.

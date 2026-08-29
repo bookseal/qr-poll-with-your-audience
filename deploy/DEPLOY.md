@@ -10,7 +10,7 @@
 ## 1. 코드 배치 + 앱 서비스
 ```bash
 ssh prod
-git clone https://github.com/bookseal/qr-chat-with-your-audience.git ~/qr-chat
+git clone https://github.com/bookseal/qr-poll-with-your-audience.git ~/qr-chat
 cd ~/qr-chat
 npm ci --omit=dev
 node seed/seed.js                      # (선택) 예시 데이터
