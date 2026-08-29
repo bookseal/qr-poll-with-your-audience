@@ -97,6 +97,11 @@
       document.getElementById("archiveToggle").textContent = showArchived ? "Back to active" : "Show archived";
       renderMessages();
     };
+    // 딥링크: ?view=chat&archived=1 로 특정 뷰를 바로 열 수 있게 (북마크·캡처용)
+    { const q = new URLSearchParams(location.search);
+      if (q.get("view") === "chat") setView(true);
+      if (q.get("archived") === "1") { showArchived = true; document.getElementById("archiveToggle").textContent = "Back to active"; }
+    }
 
     const stages = () => [...pollOrder];
     const label = (f) => polls.get(f)?.q || f;
