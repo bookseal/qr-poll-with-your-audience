@@ -13,6 +13,9 @@ export async function connect(code, { onMeta, onMsg, onReact, onVote, onDel, onR
   onMeta?.(data);
   for (const m of data.messages) onMsg?.(m);
 
+  // 캡처(스냅샷) 모드: 초기 렌더만 하고 SSE는 열지 않는다 (?snap 이면 페이지가 "로딩 완료"로 정착)
+  if (new URLSearchParams(location.search).has("snap")) return null;
+
   const es = new EventSource(`/stream/${esc(code)}`);
   es.onmessage = (e) => {
     const o = JSON.parse(e.data);
