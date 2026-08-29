@@ -221,27 +221,40 @@
       onPolls: (items) => { polls.clear(); pollOrder = items.map((p) => (polls.set(p.id, p), p.id)); renderStageBar(); renderPolls(); },
     });
 
+    let adminMeta = null;
     async function loadAdminMessages() {
       if (!key) return;
       const r = await fetch(`/admin/${encodeURIComponent(code)}/messages?key=${encodeURIComponent(key)}`);
       if (!r.ok) return;
       const data = await r.json();
+      adminMeta = data.meta || null;
       data.messages.forEach((m) => msgs.set(m.id, m));
       renderMessages();
     }
     loadAdminMessages();
 
-    // Export: poll results + chat room as a plain .txt for keeping records.
+    // Export: full record (metadata + polls + chat, including archived) as .txt.
     function exportTxt() {
       const out = [];
-      out.push(document.getElementById("title").textContent.trim());
+      const line = (m) => {
+        const when = new Date(m.ts).toLocaleString();
+        return `  - ${m.text}  [👍 ${m.reactions || 0}]${m.pinned ? " (pinned)" : ""}${m.deleted ? " (archived)" : ""}  — ${when}`;
+      };
+      const byTime = (a, b) => a.ts - b.ts;
+
+      out.push(`QR Poll — Event Export`);
+      out.push(`Title: ${document.getElementById("title").textContent.trim()}`);
       out.push(`Event code: ${code}`);
+      if (adminMeta?.presenterEmail) out.push(`Presenter email: ${adminMeta.presenterEmail}`);
+      if (key) out.push(`Admin key: ${key}   (keep private)`);
+      out.push(`Audience URL: ${location.origin}/r/${code}`);
       out.push(`Exported: ${new Date().toLocaleString()}`);
       out.push("");
+
       for (const id of pollOrder) {
         const p = polls.get(id);
         if (!p) continue;
-        out.push(`## ${p.q}`);
+        out.push(`## Poll: ${p.q}  [${p.type}]`);
         if (p.type === "choice") {
           const counts = p.counts || [];
           const total = counts.reduce((a, b) => a + b, 0);
@@ -251,15 +264,15 @@
           });
           out.push(`  Total votes: ${total}`);
         } else {
-          [...msgs.values()].filter((m) => m.pollId === id && !m.deleted)
-            .forEach((m) => out.push(`  - ${m.text}  [👍 ${m.reactions || 0}]`));
+          [...msgs.values()].filter((m) => m.pollId === id).sort(byTime).forEach((m) => out.push(line(m)));
         }
         out.push("");
       }
-      out.push("## Chat Room");
-      [...msgs.values()].filter((m) => (m.pollId || "qa") === "qa" && !m.deleted)
-        .sort((a, b) => a.ts - b.ts)
-        .forEach((m) => out.push(`  - ${m.text}  [👍 ${m.reactions || 0}]`));
+
+      const chat = [...msgs.values()].filter((m) => (m.pollId || "qa") === "qa").sort(byTime);
+      const archivedCount = chat.filter((m) => m.deleted).length;
+      out.push(`## Chat Room  (${chat.length} total, ${archivedCount} archived)`);
+      chat.forEach((m) => out.push(line(m)));
 
       const blob = new Blob([out.join("\n")], { type: "text/plain;charset=utf-8" });
       const a = document.createElement("a");

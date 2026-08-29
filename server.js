@@ -391,7 +391,8 @@ app.get("/admin/:code/messages", (req, res) => {
   const meta = eventMeta(req.params.code);
   if (!meta) return res.status(404).json({ error: "unknown event code" });
   if (!keyOk(meta, req)) return res.status(403).json({ error: "An admin key is required." });
-  res.json({ messages: room(req.params.code).messages });
+  // key로 보호되므로 export용 전체 메타(presenterEmail 등)까지 포함
+  res.json({ messages: room(req.params.code).messages, meta: normalizeMeta(meta) });
 });
 
 app.post("/admin/:code/archive/:id", (req, res) => {
