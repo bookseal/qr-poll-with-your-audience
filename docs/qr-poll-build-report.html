@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QR Poll — AI 코딩 에이전트로 만든 실시간 설문·채팅 서비스</title>
+<style>
+  :root{
+    --bg:#faf7f0; --card:#fff; --ink:#241d16; --muted:#8a7c66; --line:#ece2cf;
+    --claude:#c6613f; --codex:#2f6f57; --accent:#e0a413; --shadow:rgba(120,80,20,.10);
+    --term:#0d1117; --termln:#30363d; --termtx:#e6edf3;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.68 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",sans-serif}
+  a{color:var(--claude)}
+  /* --- 레이아웃: 좌측 목차 + 본문 --- */
+  .layout{max-width:1140px;margin:0 auto;display:grid;grid-template-columns:226px 1fr;gap:34px;padding:0 22px}
+  .toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:26px 0 40px}
+  .toc .tt{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin:0 10px 10px}
+  .toc a{display:block;padding:7px 11px;border-radius:9px;color:#6b5d47;font-size:13.5px;text-decoration:none;line-height:1.35}
+  .toc a:hover{background:#f3ece0}
+  .toc a.active{background:#fbe7cf;color:#8a5a12;font-weight:700}
+  .toc a .i{color:var(--accent);font-weight:800;margin-right:6px}
+  main.doc{min-width:0;padding:40px 0 90px}
+  /* 모바일 목차 (접기) */
+  .toc-m{display:none}
+  h1{font-size:30px;letter-spacing:-.02em;margin:0 0 8px;line-height:1.25}
+  h2{font-size:22px;margin:52px 0 6px;scroll-margin-top:16px}
+  h2 .num{color:var(--accent);font-weight:800;margin-right:8px}
+  h2+.sub{color:var(--muted);font-size:14px;margin:0 0 14px;border-bottom:2px solid var(--line);padding-bottom:12px}
+  h3{font-size:17px;margin:24px 0 8px}
+  p{margin:11px 0} .lede{color:#5c5040;font-size:16px} .pill{color:var(--muted);font-size:12.5px}
+  code{background:#f3ece0;padding:1px 6px;border-radius:5px;font-size:.86em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .glo{background:#fff8e6;border:1px solid #f0dfae;border-radius:10px;padding:11px 15px;font-size:14px;margin:12px 0}
+  .glo b{color:#a9791b}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  @media(max-width:680px){.grid2,.grid3{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 6px 18px var(--shadow)}
+  .card.claude{border-top:4px solid var(--claude)} .card.codex{border-top:4px solid var(--codex)}
+  .card h4{margin:0 0 6px;font-size:15px}
+  .tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;color:#fff}
+  .tag.claude{background:var(--claude)} .tag.codex{background:var(--codex)}
+  .big{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:8px}
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
+  .kv:last-child{border-bottom:0}.kv span:first-child{color:var(--muted)}
+  .stat{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 12px;box-shadow:0 6px 18px var(--shadow)}
+  .stat .n{font-size:28px;font-weight:800;letter-spacing:-.02em;color:var(--claude)} .stat .l{font-size:13px;color:var(--muted);margin-top:4px}
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f4ecdd;font-size:12.5px} tr:last-child td{border-bottom:0}
+  td.c{color:var(--claude);font-weight:600} td.x{color:var(--codex);font-weight:600}
+  .tl{position:relative;margin:16px 0 0;padding-left:22px}
+  .tl::before{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:var(--line)}
+  .ev{position:relative;margin:0 0 14px;padding-left:14px}
+  .ev::before{content:"";position:absolute;left:-20px;top:6px;width:11px;height:11px;border-radius:50%;background:#fff;border:3px solid var(--accent)}
+  .ev.c::before{border-color:var(--claude)} .ev.x::before{border-color:var(--codex)}
+  .ev .t{font-size:12px;color:var(--muted)} .ev .h{font-weight:700}
+  ul{margin:8px 0;padding-left:20px} li{margin:6px 0}
+  figure{margin:16px 0}
+  figure img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 22px var(--shadow);background:#fff}
+  figcaption{font-size:13px;color:var(--muted);margin-top:7px;text-align:center}
+  .shots-mobile{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .shots-mobile img{max-height:560px;object-fit:contain;object-position:top}
+  @media(max-width:560px){.shots-mobile{grid-template-columns:1fr}}
+  .svc{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:12px}
+  .svc figure{margin:0} .svc img{height:150px;object-fit:cover;object-position:top}
+  @media(max-width:680px){.svc{grid-template-columns:1fr}}
+  .prompt{background:var(--term);border:1px solid var(--termln);border-radius:11px;overflow:hidden;margin:14px 0;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+  .prompt .bar{background:#161b22;border-bottom:1px solid var(--termln);padding:8px 13px;display:flex;align-items:center;gap:8px}
+  .prompt .bar .dots{display:flex;gap:6px} .prompt .bar .dots i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .d1{background:#ff5f56}.d2{background:#ffbd2e}.d3{background:#27c93f}
+  .prompt .bar .lbl{color:#8b949e;font-size:12px;font-family:ui-monospace,Menlo,monospace;margin-left:6px}
+  .prompt .bar .lbl.x{color:#7ee2b8}
+  .prompt .body{padding:15px 17px;color:var(--termtx);white-space:pre-wrap;word-break:break-word;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace}
+  .prompt .body .caret{color:var(--accent);font-weight:700}
+  .analysis{border-left:3px solid var(--accent);background:#fffdf7;padding:12px 16px;margin:10px 0 26px;border-radius:0 10px 10px 0}
+  .analysis h4{margin:2px 0 8px;font-size:14.5px;color:#a9791b}
+  .analysis .row{display:flex;gap:10px;margin:7px 0;font-size:14px}
+  .analysis .row b{flex:none;min-width:118px;color:var(--ink)}
+  /* 바이브코딩 흐름 스텝 */
+  .flow{margin-top:16px}
+  .step{display:grid;grid-template-columns:52px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--line)}
+  .step:last-child{border-bottom:0}
+  .step .no{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:18px;display:grid;place-items:center}
+  .step h4{margin:2px 0 4px;font-size:16px}
+  .step .who{font-size:12px;font-weight:700;color:var(--muted)}
+  .step .who b{color:var(--claude)}
+  .live{display:block;text-align:center;background:linear-gradient(135deg,#2f6f57,#255c48);color:#fff;padding:20px;border-radius:14px;margin:26px 0 6px;text-decoration:none;box-shadow:0 8px 22px var(--shadow)}
+  .live b{font-size:19px} .live span{display:block;font-size:13px;opacity:.85;margin-top:4px}
+  .foot{margin-top:34px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
+  /* --- 반응형: 모바일에서 목차를 접이식으로 --- */
+  @media(max-width:840px){
+    .layout{grid-template-columns:1fr;gap:0}
+    .toc{display:none}
+    main.doc{padding:22px 0 80px}
+    .toc-m{display:block;position:sticky;top:0;z-index:20;margin:0 -22px 8px;background:rgba(250,247,240,.95);
+      backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+    .toc-m summary{list-style:none;cursor:pointer;padding:12px 22px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px}
+    .toc-m summary::-webkit-details-marker{display:none}
+    .toc-m summary::after{content:"▾";margin-left:auto;color:var(--muted)}
+    .toc-m[open] summary::after{content:"▴"}
+    .toc-m .links{padding:4px 12px 12px}
+    .toc-m a{display:block;padding:9px 10px;border-radius:8px;color:#6b5d47;font-size:14px;text-decoration:none;border-bottom:1px solid #f3ece0}
+    .toc-m a .i{color:var(--accent);font-weight:800;margin-right:6px}
+    h1{font-size:25px} h2{font-size:20px;margin-top:40px}
+    .prompt .body{font-size:12px}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <nav class="toc" aria-label="목차">
+    <div class="tt">목차</div>
+    <a href="#s1"><span class="i">1</span>QR Poll이란</a>
+    <a href="#s2"><span class="i">2</span>얼마나 빨리·어디에 배포</a>
+    <a href="#s3"><span class="i">3</span>두 AI로 만들어 비교</a>
+    <a href="#s4"><span class="i">4</span>전체 프롬프트 흐름</a>
+    <a href="#s5"><span class="i">5</span>인상적인 프롬프트</a>
+    <a href="#s6"><span class="i">6</span>좋은 프롬프트 6단계</a>
+    <a href="#s7"><span class="i">7</span>바이브코딩은 이렇게</a>
+  </nav>
+
+  <main class="doc">
+
+    <details class="toc-m">
+      <summary>📑 목차</summary>
+      <div class="links">
+        <a href="#s1"><span class="i">1</span>QR Poll이란</a>
+        <a href="#s2"><span class="i">2</span>얼마나 빨리·어디에 배포</a>
+        <a href="#s3"><span class="i">3</span>두 AI로 만들어 비교</a>
+        <a href="#s4"><span class="i">4</span>전체 프롬프트 흐름</a>
+        <a href="#s5"><span class="i">5</span>인상적인 프롬프트</a>
+        <a href="#s6"><span class="i">6</span>좋은 프롬프트 6단계</a>
+        <a href="#s7"><span class="i">7</span>바이브코딩은 이렇게</a>
+      </div>
+    </details>
+
+    <h1>QR Poll — AI 코딩 에이전트로 만든<br>실시간 설문·채팅 서비스</h1>
+    <p class="lede">QR만 찍으면 가입·설치 없이 익명으로 참여하는 강의용 실시간 도구를,
+    AI에게 대화로 지시해 <b>클라우드 배포까지 약 2시간 만에</b> 완성한 과정 기록.</p>
+    <p class="pill">제작 기록 · 2026-08 · 수치는 실제 세션 로그에서 추출</p>
+
+    <h2 id="s1"><span class="num">1</span>QR Poll이란?</h2>
+    <p class="sub">강의장에서 쓰는 "가벼운 Slido" — 청중 참여를 실시간으로 모으는 도구</p>
+    <p>발표자가 화면에 QR코드를 띄우면, 청중은 폰으로 찍어 <b>익명으로 메시지·질문·투표</b>를 남긴다.
+    결과는 발표자 화면에 <b>실시간</b>으로 집계된다. 유료 서비스 <a href="https://www.slido.com">Slido</a>의 핵심만 떼어 직접 만든 버전이다.</p>
+    <div class="grid2">
+      <div class="card"><h4>🙋 청중 <code>/r/코드</code></h4>폰으로 QR 스캔 → 익명 메시지·👍리액션·객관식 투표. 발표자가 지금 띄운 것만 보인다.</div>
+      <div class="card"><h4>🖥️ 빔프로젝터 <code>/present/코드</code></h4>큰 화면 전용(읽기 전용). QR + 실시간 결과. 발표자가 고른 질문이 실시간 전환된다.</div>
+      <div class="card"><h4>🎤 관리자 <code>/admin/코드</code></h4>강사 조종석. 질문 띄우기/다음, 메시지 삭제·고정, 결과 내보내기(txt). 비밀키로 보호.</div>
+      <div class="card"><h4>💬 챗룸(백채널)</h4>질문·투표와 별개로 항상 열리는 캐주얼 채팅. 오른쪽 위 플로팅 버튼으로 연다.</div>
+    </div>
+    <div class="glo"><b>실시간은 어떻게?</b> <b>SSE(Server-Sent Events)</b> —
+    <b>쉽게 말해</b> "서버가 브라우저로 새 소식을 계속 밀어주는 한 방향 통로". 누가 글을 남기면
+    접속 중인 모든 화면에 즉시 반영된다. 저장은 거창한 DB 대신 <b>텍스트 파일에 한 줄씩 쌓는(JSONL)</b> 가장 단순한 방식.</div>
+
+    <h3>📸 실제 화면 (라이브 데모)</h3>
+    <figure><img src="img/present.png" alt="빔프로젝터 화면" loading="lazy" /><figcaption>🖥️ 빔프로젝터 — QR + poll 실시간 집계</figcaption></figure>
+    <figure><img src="img/admin-polls.png" alt="관리자 콘솔" loading="lazy" /><figcaption>🎤 관리자 콘솔 — 사이드바로 질문 띄우기·편집, 하단에 결과 내보내기(.txt)</figcaption></figure>
+    <div class="shots-mobile">
+      <figure><img src="img/audience-poll.png" alt="청중 투표(폰)" loading="lazy" /><figcaption>📱 청중 — 탭해서 투표</figcaption></figure>
+      <figure><img src="img/chat.png" alt="청중 챗룸(폰)" loading="lazy" /><figcaption>📱 청중 — 챗룸(익명 백채널)</figcaption></figure>
+    </div>
+    <figure><img src="img/admin-archived.png" alt="관리자 아카이브 뷰" loading="lazy" /><figcaption>🗂️ 관리자 → 챗룸 → 아카이브된 메시지(soft delete, 복원 가능)</figcaption></figure>
+
+    <h2 id="s2"><span class="num">2</span>얼마나 빨리, 어디에 배포했나</h2>
+    <p class="sub">"만들기"만이 아니라 실제로 인터넷에서 굴러가게 만든 게 이 프로젝트의 핵심</p>
+    <div class="grid3">
+      <div class="stat"><div class="n">~17분</div><div class="l">첫 메시지 → 라이브 배포된 MVP<br>(07:36 → 07:53 "잘 되네")</div></div>
+      <div class="stat"><div class="n">~2시간</div><div class="l">Phase 0–3 완성<br>(관리자·프로젝터·실시간 동기화)</div></div>
+      <div class="stat"><div class="n">$0</div><div class="l">서버 비용<br>(Oracle Cloud 무료 등급)</div></div>
+    </div>
+    <h3>"클라우드 배포"란 — 내 컴퓨터를 넘어 남들이 쓰게 만들기</h3>
+    <p>만든 걸 노트북에서만 돌리면 나만 쓴다. <b>배포(deploy)</b>는 그걸 인터넷에 올려 누구나 접속하게 만드는 일이다.
+    이 서비스가 실제로 올라가 있는 곳(<code>ssh prod</code>로 접속해 확인한 현재 상태):</p>
+    <ul>
+      <li><b>서버</b>: <b>Oracle Cloud(OCI) Always Free — Ampere A1</b> 인스턴스. <b>쉽게 말해</b> 오라클이 무료로 주는 ARM 서버. 사양은 <code>Ubuntu 20.04 · ARM(aarch64) · 4 vCPU · 24GB RAM</code>이고 <b>19주 넘게 무중단 가동</b> 중. 월 요금 <b>$0</b>.</li>
+      <li><b>항상 켜두기</b>: <b>systemd</b>로 앱을 등록해 꺼지면 자동 재시작. ("관리인"이 상주하는 셈)</li>
+      <li><b>연결 통로</b>: <b>Cloudflare Tunnel</b> — 방화벽·포트를 열지 않고 서버를 인터넷에 안전하게 잇는 통로. (원래 쓰려던 nginx 방식이 서버 사정으로 막혀 이걸로 우회)</li>
+      <li><b>주소</b>: 직접 산 도메인 <b>qr-poll.physical-spark.com</b>을 그 통로에 연결. QR은 접속 주소를 자동으로 담는다.</li>
+    </ul>
+    <p class="pill">즉, 무료 클라우드 + 터널 + 도메인으로 <b>비용 없이 실서비스처럼</b> 운영 중이다.</p>
+    <h3>쓴 서비스</h3>
+    <div class="svc">
+      <figure><img src="img/svc-oci.png" alt="Oracle Cloud Free Tier" loading="lazy" /><figcaption>Oracle Cloud — 무료 서버(Ampere A1)</figcaption></figure>
+      <figure><img src="img/svc-cloudflare.png" alt="Cloudflare Tunnel" loading="lazy" /><figcaption>Cloudflare Tunnel — 안전한 연결 통로</figcaption></figure>
+      <figure><img src="img/svc-github.png" alt="GitHub 저장소" loading="lazy" /><figcaption>GitHub — 코드 저장·기록</figcaption></figure>
+    </div>
+
+    <h2 id="s3"><span class="num">3</span>두 AI로 만들어 비교</h2>
+    <p class="sub">같은 프로젝트를 Claude Code와 Codex CLI, 두 코딩 에이전트로 진행하며 성능을 비교했다</p>
+    <div class="grid2">
+      <div class="card claude"><span class="tag claude">Claude Code</span>
+        <div class="big">claude-opus-4-8</div>
+        <p class="pill">Anthropic · "계획하고, 눈으로 확인하며"</p>
+        <div class="kv"><span>담당</span><b>MVP 뼈대 · 배포 · 정리/리브랜딩</b></div>
+        <div class="kv"><span>사람 지시 횟수</span><b>≈ 18번</b></div>
+        <div class="kv"><span>도구 사용</span><b>명령 90 · 파일수정 67 · 읽기 22</b></div>
+        <div class="kv"><span>실제 화면 검증</span><b>≈ 54회 (브라우저 스크린샷)</b></div>
+      </div>
+      <div class="card codex"><span class="tag codex">Codex CLI</span>
+        <div class="big">gpt-5.6-luna</div>
+        <p class="pill">OpenAI(GPT-5 기반) · "빠르게 자율 실행"</p>
+        <div class="kv"><span>담당</span><b>기능 대확장 · 챗룸 · 설문 관리</b></div>
+        <div class="kv"><span>사람 지시 횟수</span><b>≈ 53번</b></div>
+        <div class="kv"><span>진행</span><b>단일 세션 ~4시간 43분</b></div>
+        <div class="kv"><span>실제 화면 검증</span><b>없음 (CLI 단독)</b></div>
+      </div>
+    </div>
+    <table>
+      <tr><th>항목</th><th>Claude (opus-4-8)</th><th>Codex (gpt-5.6-luna)</th></tr>
+      <tr><td>일하는 방식</td><td class="c">계획 → 구현 → <b>실제 브라우저로 눈 확인</b> → 단계별 배포</td><td class="x">한 세션에서 빠르게 자율 반복</td></tr>
+      <tr><td>지시 입자</td><td class="c">큰 그림(설계·phase)을 맡김 — <b>18번</b></td><td class="x">더 잘게·자주 교정 — <b>53번</b></td></tr>
+      <tr><td>강점</td><td class="c">엔드투엔드 검증, 배포·인프라, 회귀 정리</td><td class="x">속도, 대규모 리팩터, 기능 폭</td></tr>
+      <tr><td>약점</td><td class="c">검증·질문에 시간이 더 듦</td><td class="x">마감 일관성(잔여물)·시각 확인 부재</td></tr>
+    </table>
+    <p class="pill" style="margin-top:12px"><b>결론:</b> Codex가 넓고 빠르게 밀어붙이면, Claude가 계획·검증·정리로 마감을 잡는 <b>하이브리드</b>가 잘 맞았다.</p>
+
+    <h2 id="s4"><span class="num">4</span>전체 프롬프트 흐름</h2>
+    <p class="sub">첫 설계 한 문단에서 시작해, 배포 → 반복 개선 → 다른 AI로 확장 → 정리로 이어졌다</p>
+    <div class="tl">
+      <div class="ev c"><div class="t">8/28 07:36 · Claude</div><div class="h">설계 프롬프트 한 방 → 로컬 MVP</div>"slido 같은 걸 가장 간단하게" 한 문단으로 방향·제약·배포·검증·프로세스를 모두 지정.</div>
+      <div class="ev c"><div class="t">8/28 07:45–07:53 · Claude</div><div class="h">라이브 배포 (≈17분)</div>"응 배포도 해보자" → Cloudflare Tunnel로 올리고 "잘 되네. 계속 phase를 진행하자".</div>
+      <div class="ev c"><div class="t">8/28 07:53–09:32 · Claude</div><div class="h">Phase 1→3 반복</div>리액션·정렬 → 객관식 poll → 관리자/프로젝터 분리 → 청중이 발표자 focus를 따라감. 한글 IME·캐시 버그도 그때그때 수정.</div>
+      <div class="ev x"><div class="t">8/28 09:39–14:22 · Codex</div><div class="h">다른 AI로 확장 (잘게 53번 지시)</div>Q&amp;A·poll 분리, 설문 CRUD, 투표 취소/변경, 플로팅 챗룸, 발표자 이메일 복구, UI 영어화. UI 위치·상태를 반복 교정하며 진행.</div>
+      <div class="ev c"><div class="t">8/28 밤–8/30 · Claude</div><div class="h">복귀 → 정리·리브랜딩·도메인·내보내기</div>데드코드/중복 제거, 데모 복구, qr-chat→<b>qr-poll</b> 리브랜딩, 도메인 전환, 결과 txt export, 이 리포트.</div>
+    </div>
+
+    <h2 id="s5"><span class="num">5</span>인상적인 프롬프트 — 원문 + 분석</h2>
+    <p class="sub">실제 보낸 말 <b>원문 그대로</b>. 왜 좋은 지시였는지, 모델에 따라 어떻게 달라졌는지</p>
+
+    <h3>① 방향을 통째로 세운 첫 프롬프트 <span class="pill">(Claude)</span></h3>
+    <div class="prompt">
+      <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl">사용자 → Claude Code</span></div>
+      <div class="body"><span class="caret">❯ </span>slido 같은 서비스를 만드려고 하는데 가장 간단하게 해보려고 한다. 이게 vercel로 배포가 가능할지.
+
+mvp로는 실시간 채팅. qr로 해서 익명으로 남기는 거
+거기가 phase를 발전시켜나가며 커지면 된다.
+
+아니면 "ssh prod"이라는 리눅스 서버로 배포를 일단 간단하게 하고 cloudflare로 qr-chat.physical-spark.com 으로 운영해도 되고, cloudflare에서 이 도메인을 샀거든.
+
+결국 slido를 따라 하는건데, 슬리도보다 기능은 작을 것이다. 설문 문구 같은거도 그냥 간단하게 json이라던지 md로 바꾸게 하고 ui는 그냥 최소한의 gui만 있으면 된다. todolist 같은 수준.
+
+크롬 cdp로 확인해봐
+
+[Notion 강의안 링크]  [Slido 관리자 링크]
+
+딱 위의 수준의 강의를 할 수 있을정도면 된다. 실제 데이터도 한번 위에거로 예시로 만들어봐.
+
+github repo 에 public 으로 만들고 계속 commit push 하면서 만들어봐. roadmap까지 docs나 readme에 꾸미면서</div>
+    </div>
+    <div class="analysis">
+      <h4>이 한 문단에 설계 요소 8가지가 다 있다</h4>
+      <div class="row"><b>① 레퍼런스로 목표</b><span>"slido 같은" — 목표를 한 단어로 합의.</span></div>
+      <div class="row"><b>② 제약 먼저</b><span>"가장 간단하게 / 기능은 작을 것 / todolist 수준" — 범위를 좁혀 완성률을 높인다.</span></div>
+      <div class="row"><b>③ 단계적 사고</b><span>"mvp로는 … phase를 발전시켜나가며" — MVP→성장 경로 제시.</span></div>
+      <div class="row"><b>④ 선택지+판단 위임</b><span>"vercel … 아니면 ssh prod … 도 되고" — 옵션을 주되 결정은 AI에게.</span></div>
+      <div class="row"><b>⑤ 운영까지 시야</b><span>도메인·서버·cloudflare 언급 — "실제로 굴러가게"가 목표.</span></div>
+      <div class="row"><b>⑥ 설정 분리</b><span>"설문 문구 … json/md로" — 값을 코드에 박지 말고 바꾸기 쉬운 파일로.</span></div>
+      <div class="row"><b>⑦ 검증 지시</b><span>"크롬 cdp로 확인해봐 / 실제 데이터도 예시로" — AI가 실물을 보고 만들게.</span></div>
+      <div class="row"><b>⑧ 프로세스 지정</b><span>"public repo … commit push … roadmap까지" — 작업 방식·산출물 기준을 못 박음.</span></div>
+    </div>
+
+    <h3>② 제품 고민을 소리 내어 <span class="pill">(Claude)</span></h3>
+    <div class="prompt">
+      <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl">사용자 → Claude Code</span></div>
+      <div class="body"><span class="caret">❯ </span>그래 챗룸은 따로 오른쪽 위에 동그라미로 위치시키자. 그냥 청중q&a 가 아니라 챗룸인거지. 마치 우리가 오픈카톡으로 오만거 다 하듯…. 그건 slido와 좀 달라지네. 하지만 이건 확실히 그 동그라미 버튼으로 오른쪽 위에 해야 할듯 오른쪽 아래 해도 되려나….. 잘 모르겠네. 이게 ui를 전체를 흐릴까봐. 그 나중에 뭐 poll할때 text input 하고 전송버튼이 있을 수 있지</div>
+    </div>
+    <div class="analysis">
+      <h4>불확실함을 숨기지 않은 게 핵심</h4>
+      <div class="row"><b>비유로 의도</b><span>"오픈카톡으로 오만거 다 하듯" — 원하는 느낌을 정확히 옮긴다.</span></div>
+      <div class="row"><b>고민을 공유</b><span>"오른쪽 위? 아래? 잘 모르겠네 / UI를 흐릴까봐" — 결정 못 한 지점과 걱정을 말하니 AI가 트레이드오프를 정리해 추천한다.</span></div>
+      <div class="row"><b>배운 점</b><span>완벽한 스펙이 아니어도 된다. "이게 고민인데 어떻게 할까"가 더 나은 결과를 부른다.</span></div>
+    </div>
+
+    <h3>③ Codex에선 — 더 잘게, 더 자주 교정 <span class="pill">(Codex)</span></h3>
+    <p>같은 사람이지만 <b>모델에 맞춰 지시 방식을 바꿨다.</b> Claude엔 큰 그림을 맡겼다면,
+    Codex는 결과가 자주 어긋나 <b>작은 단위로 쪼개고 바로잡는</b> 프롬프트가 많았다(총 53번).</p>
+    <div class="prompt">
+      <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl x">사용자 → Codex</span></div>
+      <div class="body"><span class="caret">❯ </span>audience Q&A는 완전히 좀 다른 형태로 오른쪽 위에 Ask Anything 이런 동그란 floating 버튼으로 만들고 그거 누르면 보이는거지. 어때</div>
+    </div>
+    <div class="prompt">
+      <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl x">사용자 → Codex (교정·롤백)</span></div>
+      <div class="body"><span class="caret">❯ </span>관리자가 왼쪽 사이드 패널을 만드들어라고. 왼쪽 에 사이드패널을 둬야지. 뭐하냐. 다시 롤백해서 사ㅣ드 패널 왼쪽에 만들어</div>
+    </div>
+    <div class="analysis">
+      <h4>모델 능력에 맞춘 "프롬프트 입자(granularity)" 조절</h4>
+      <div class="row"><b>관찰</b><span>Codex는 UI 위치·상태를 자주 어긋나게 잡아, "왼쪽에 만들어 / 다시 롤백해서 / 너무 오류가 많네" 같은 교정 프롬프트가 반복됐다.</span></div>
+      <div class="row"><b>대응</b><span>사용자는 큰 걸 맡기는 대신 <b>작업을 잘게 쪼개고 즉시 피드백</b>했다.</span></div>
+      <div class="row"><b>배운 점</b><span>강한 모델엔 위임, 약한 모델엔 분해+검증. 프롬프트 크기를 모델에 맞추는 것도 실력.</span></div>
+    </div>
+
+    <h2 id="s6"><span class="num">6</span>따라 하기 — 좋은 프롬프트 6단계</h2>
+    <p class="sub">위 사례에서 뽑은, 누구나 쓸 수 있는 틀</p>
+    <ul>
+      <li><b>1. 목표를 레퍼런스로</b> — "○○ 같은 걸 만들고 싶어"</li>
+      <li><b>2. 범위를 좁혀라</b> — "가장 간단하게, 딱 이 정도만" (안 만들 것도 말하기)</li>
+      <li><b>3. 단계로 나눠라</b> — "먼저 MVP는 △△, 그다음 phase로"</li>
+      <li><b>4. 선택지+판단을 맡겨라</b> — "A로 할까 B로 할까? 추천해줘"</li>
+      <li><b>5. 검증을 시켜라</b> — "직접 실행/화면 보고 확인, 예시 데이터도"</li>
+      <li><b>6. 모델에 맞춰 입자 조절</b> — 강한 모델엔 위임, 약한 모델엔 잘게 쪼개고 자주 확인</li>
+    </ul>
+    <div class="glo">핵심은 <b>완벽한 명세서가 아니라 "방향 + 제약 + 위임"</b>. 개발 용어를 다 몰라도
+    <b>무엇을·왜·어디까지</b>만 분명히 말하면 AI가 나머지를 채운다.</div>
+
+    <h2 id="s7"><span class="num">7</span>바이브코딩은 이렇게 흘러갑니다</h2>
+    <p class="sub">코드를 한 줄도 안 써도 괜찮다 — 이 6가지가 계속 돌아간다</p>
+    <div class="flow">
+      <div class="step"><div class="no">1</div><div>
+        <h4>🎯 말한다</h4><div class="who"><b>사람</b></div>
+        <p>"이런 걸 만들고 싶어" — 목표를 아는 서비스에 빗대고, 범위를 좁혀서 한 문단으로. 완벽할 필요 없다.</p></div></div>
+      <div class="step"><div class="no">2</div><div>
+        <h4>🛠️ 만든다</h4><div class="who">AI</div>
+        <p>AI가 파일을 만들고 코드를 쓰고, 필요한 도구(서버·라이브러리)를 스스로 고른다. 내 노트북에서 일단 돌아가게 한다.</p></div></div>
+      <div class="step"><div class="no">3</div><div>
+        <h4>👀 확인한다</h4><div class="who">AI가 보여주고 · <b>사람</b>이 본다</div>
+        <p>말로 "됐어요"가 아니라 <b>실제 화면·스크린샷·실행 결과</b>로 확인. 이 프로젝트에선 AI가 브라우저로 직접 찍어 54번 확인했다.</p></div></div>
+      <div class="step"><div class="no">4</div><div>
+        <h4>🔁 고친다</h4><div class="who"><b>사람</b></div>
+        <p>"이건 오른쪽 위로 / 이 글자 작게 / 이건 빼줘"처럼 구체적으로. 고민되면 "잘 모르겠는데 어떻게 할까?"라고 물어도 된다.</p></div></div>
+      <div class="step"><div class="no">5</div><div>
+        <h4>🚀 올린다</h4><div class="who">AI</div>
+        <p>인터넷에 배포해 남들이 쓰게 만든다(서버·도메인·항상 켜두기). 무료 클라우드로 <b>$0</b>에도 가능하다.</p></div></div>
+      <div class="step"><div class="no">6</div><div>
+        <h4>🌱 키운다</h4><div class="who">반복</div>
+        <p>한 번에 완성하지 말고 작은 버전(MVP)부터. 되면 다음 기능(phase)으로. 막히면? <b>더 잘게 쪼개서</b> 부탁하면 된다(이 프로젝트의 Codex 구간처럼).</p></div></div>
+    </div>
+    <div class="glo"><b>역할 나누기 한 줄 요약:</b> <b>사람</b>은 방향·판단·검증을, <b>AI</b>는 실행·반복·기록을 맡는다.
+    당신이 코드를 몰라도 <b>무엇을·왜·어디까지</b>를 계속 말해주면, 서비스가 실제로 세상에 나온다.</div>
+
+    <a class="live" href="https://qr-poll.physical-spark.com" target="_blank" rel="noopener">
+      <b>🔗 직접 써보기 — qr-poll.physical-spark.com</b>
+      <span>랜딩에서 코드로 입장하거나, 새 이벤트를 만들어 QR을 띄워보세요</span>
+    </a>
+
+    <div class="foot">
+      수치는 실제 세션 트랜스크립트(Claude Code·Codex 로그)에서 추출했습니다.
+      민감정보(관리자 키·이메일·개인정보)는 담지 않았고, 외부 링크는 표시로 대체했습니다.
+      서버 상태는 <code>ssh prod</code>에서 직접 확인(OCI Always Free · Ampere A1).
+    </div>
+  </main>
+</div>
+
+<script>
+  // 스크롤 스파이: 현재 섹션을 좌측 목차에 하이라이트
+  (function(){
+    var links=[].slice.call(document.querySelectorAll('.toc a'));
+    var map={}; links.forEach(function(a){map[a.getAttribute('href').slice(1)]=a;});
+    var secs=[].slice.call(document.querySelectorAll('main h2[id]'));
+    if(!('IntersectionObserver' in window)||!secs.length) return;
+    var io=new IntersectionObserver(function(ents){
+      ents.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(a){a.classList.remove('active');});
+          var a=map[e.target.id]; if(a) a.classList.add('active');
+        }
+      });
+    },{rootMargin:'-10% 0px -80% 0px'});
+    secs.forEach(function(s){io.observe(s);});
+    // 모바일: 목차 링크 누르면 접기
+    var m=document.querySelector('.toc-m');
+    if(m) m.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){m.removeAttribute('open');});});
+  })();
+</script>
+</body>
+</html>

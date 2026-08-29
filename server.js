@@ -257,6 +257,14 @@ app.use(
     setHeaders: (res) => res.setHeader("Cache-Control", "no-cache"),
   })
 );
+// 빌드 리포트 (docs/) 를 /report 로 공개. /report/ → qr-poll-build-report.html, 이미지는 /report/img/*
+app.use(
+  "/report",
+  express.static(path.join(__dirname, "docs"), {
+    index: "qr-poll-build-report.html",
+    setHeaders: (res) => res.setHeader("Cache-Control", "no-cache"),
+  })
+);
 
 const lastPost = new Map(); // ip -> ts (메시지)
 const lastNew = new Map(); // ip -> ts (이벤트 생성)

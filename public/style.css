@@ -215,6 +215,8 @@ button.ghost { background: var(--card); border: 1px solid var(--accent); color: 
 
 /* landing hint */
 .hint-sm { color: var(--muted); font-size: 12px; margin: 14px 0 0; line-height: 1.5; }
+.report-link { display: block; text-align: center; margin: 16px auto 0; font-size: 13px; color: var(--muted); text-decoration: none; }
+.report-link:hover { color: var(--accent); }
 
 /* --- 관리자 콘솔 --- */
 .wrap.admin { max-width: none; margin: 0; padding: 24px 24px 40px 252px; }
