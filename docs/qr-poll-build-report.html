@@ -6,107 +6,104 @@
 <title>QR Poll — AI 코딩 에이전트로 만든 실시간 설문·채팅 서비스</title>
 <style>
   :root{
-    --bg:#faf7f0; --card:#fff; --ink:#241d16; --muted:#8a7c66; --line:#ece2cf;
-    --claude:#c6613f; --codex:#2f6f57; --accent:#e0a413; --shadow:rgba(120,80,20,.10);
+    --bg:#f7f9fc; --card:#ffffff; --ink:#111827; --body:#334155; --muted:#64748b; --line:#e5e9f0;
+    --accent:#2563eb; --accent-soft:#eef4ff; --accent-line:#c7dbff;
+    --red:#dc2626; --green:#059669; --shadow:rgba(15,23,42,.06);
     --term:#0d1117; --termln:#30363d; --termtx:#e6edf3;
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font:16px/1.68 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",sans-serif}
-  a{color:var(--claude)}
-  /* --- 레이아웃: 좌측 목차 + 본문 --- */
-  .layout{max-width:1140px;margin:0 auto;display:grid;grid-template-columns:226px 1fr;gap:34px;padding:0 22px}
+  body{margin:0;background:var(--bg);color:var(--body);
+    font:16px/1.7 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Segoe UI",Roboto,sans-serif}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  .layout{max-width:1160px;margin:0 auto;display:grid;grid-template-columns:236px 1fr;gap:36px;padding:0 22px}
   .toc{position:sticky;top:0;align-self:start;max-height:100vh;overflow:auto;padding:26px 0 40px}
-  .toc .tt{font-size:12px;font-weight:800;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin:0 10px 10px}
-  .toc a{display:block;padding:7px 11px;border-radius:9px;color:#6b5d47;font-size:13.5px;text-decoration:none;line-height:1.35}
-  .toc a:hover{background:#f3ece0}
-  .toc a.active{background:#fbe7cf;color:#8a5a12;font-weight:700}
+  .toc .tt{font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:0 10px 12px}
+  .toc a{display:block;padding:7px 11px;border-radius:8px;color:var(--muted);font-size:13.5px;line-height:1.35}
+  .toc a:hover{background:#eef2f8;text-decoration:none}
+  .toc a.active{background:var(--accent-soft);color:var(--accent);font-weight:700}
   .toc a .i{color:var(--accent);font-weight:800;margin-right:6px}
   main.doc{min-width:0;padding:40px 0 90px}
-  /* 모바일 목차 (접기) */
   .toc-m{display:none}
-  h1{font-size:30px;letter-spacing:-.02em;margin:0 0 8px;line-height:1.25}
-  h2{font-size:22px;margin:52px 0 6px;scroll-margin-top:16px}
+  h1{font-size:32px;letter-spacing:-.025em;margin:0 0 10px;line-height:1.22;color:var(--ink);font-weight:800}
+  h2{font-size:22px;margin:54px 0 6px;scroll-margin-top:16px;color:var(--ink);font-weight:800;letter-spacing:-.01em}
   h2 .num{color:var(--accent);font-weight:800;margin-right:8px}
-  h2+.sub{color:var(--muted);font-size:14px;margin:0 0 14px;border-bottom:2px solid var(--line);padding-bottom:12px}
-  h3{font-size:17px;margin:24px 0 8px}
-  p{margin:11px 0} .lede{color:#5c5040;font-size:16px} .pill{color:var(--muted);font-size:12.5px}
-  code{background:#f3ece0;padding:1px 6px;border-radius:5px;font-size:.86em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  .glo{background:#fff8e6;border:1px solid #f0dfae;border-radius:10px;padding:11px 15px;font-size:14px;margin:12px 0}
-  .glo b{color:#a9791b}
+  h2+.sub{color:var(--muted);font-size:14px;margin:0 0 16px;border-bottom:1px solid var(--line);padding-bottom:14px}
+  h3{font-size:17px;margin:26px 0 8px;color:var(--ink);font-weight:700}
+  p{margin:11px 0} .lede{color:#475569;font-size:16.5px} .pill{color:var(--muted);font-size:12.5px}
+  code{background:#eef2f7;color:#334155;padding:1px 6px;border-radius:5px;font-size:.86em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .glo{background:var(--accent-soft);border:1px solid var(--accent-line);border-left:4px solid var(--accent);border-radius:8px;padding:12px 16px;font-size:14px;margin:14px 0;color:#1e3a5f}
+  .glo b{color:var(--accent)}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
   .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
   @media(max-width:680px){.grid2,.grid3{grid-template-columns:1fr}}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 6px 18px var(--shadow)}
-  .card.claude{border-top:4px solid var(--claude)} .card.codex{border-top:4px solid var(--codex)}
-  .card h4{margin:0 0 6px;font-size:15px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:0 4px 14px var(--shadow)}
+  .card.claude{border-top:3px solid var(--red)} .card.codex{border-top:3px solid var(--green)}
+  .card h4{margin:0 0 6px;font-size:15px;color:var(--ink)}
   .tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;color:#fff}
-  .tag.claude{background:var(--claude)} .tag.codex{background:var(--codex)}
-  .big{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:8px}
+  .tag.claude{background:var(--red)} .tag.codex{background:var(--green)}
+  .big{font-size:25px;font-weight:800;letter-spacing:-.02em;margin-top:8px;color:var(--ink)}
   .kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
   .kv:last-child{border-bottom:0}.kv span:first-child{color:var(--muted)}
-  .stat{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 12px;box-shadow:0 6px 18px var(--shadow)}
-  .stat .n{font-size:28px;font-weight:800;letter-spacing:-.02em;color:var(--claude)} .stat .l{font-size:13px;color:var(--muted);margin-top:4px}
-  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .stat{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 12px;box-shadow:0 4px 14px var(--shadow)}
+  .stat .n{font-size:28px;font-weight:800;letter-spacing:-.02em;color:var(--accent)} .stat .l{font-size:13px;color:var(--muted);margin-top:4px}
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
   th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
-  th{background:#f4ecdd;font-size:12.5px} tr:last-child td{border-bottom:0}
-  td.c{color:var(--claude);font-weight:600} td.x{color:var(--codex);font-weight:600}
+  th{background:#f1f5fb;font-size:12.5px;color:var(--ink)} tr:last-child td{border-bottom:0}
+  td.c{color:var(--red);font-weight:600} td.x{color:var(--green);font-weight:600}
   .tl{position:relative;margin:16px 0 0;padding-left:22px}
   .tl::before{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:var(--line)}
   .ev{position:relative;margin:0 0 14px;padding-left:14px}
   .ev::before{content:"";position:absolute;left:-20px;top:6px;width:11px;height:11px;border-radius:50%;background:#fff;border:3px solid var(--accent)}
-  .ev.c::before{border-color:var(--claude)} .ev.x::before{border-color:var(--codex)}
-  .ev .t{font-size:12px;color:var(--muted)} .ev .h{font-weight:700}
+  .ev.c::before{border-color:var(--red)} .ev.x::before{border-color:var(--green)}
+  .ev .t{font-size:12px;color:var(--muted)} .ev .h{font-weight:700;color:var(--ink)}
   ul{margin:8px 0;padding-left:20px} li{margin:6px 0}
   figure{margin:16px 0}
-  figure img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 22px var(--shadow);background:#fff}
-  figcaption{font-size:13px;color:var(--muted);margin-top:7px;text-align:center}
+  figure img{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:12px;box-shadow:0 6px 18px var(--shadow);background:#fff}
+  figcaption{font-size:13px;color:var(--muted);margin-top:8px;text-align:center}
   .shots-mobile{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .shots-mobile img{max-height:560px;object-fit:contain;object-position:top}
+  .shots-mobile figure{margin:0}
+  .shots-mobile img{width:100%;aspect-ratio:10/13;object-fit:cover;object-position:top}
   @media(max-width:560px){.shots-mobile{grid-template-columns:1fr}}
   .svc{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:12px}
   .svc figure{margin:0} .svc img{height:150px;object-fit:cover;object-position:top}
   @media(max-width:680px){.svc{grid-template-columns:1fr}}
-  .prompt{background:var(--term);border:1px solid var(--termln);border-radius:11px;overflow:hidden;margin:14px 0;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+  .mermaid{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;margin:16px 0;text-align:center;overflow:auto;box-shadow:0 4px 14px var(--shadow)}
+  .prompt{background:var(--term);border:1px solid var(--termln);border-radius:11px;overflow:hidden;margin:14px 0;box-shadow:0 8px 24px rgba(2,6,23,.28)}
   .prompt .bar{background:#161b22;border-bottom:1px solid var(--termln);padding:8px 13px;display:flex;align-items:center;gap:8px}
   .prompt .bar .dots{display:flex;gap:6px} .prompt .bar .dots i{width:11px;height:11px;border-radius:50%;display:inline-block}
   .d1{background:#ff5f56}.d2{background:#ffbd2e}.d3{background:#27c93f}
   .prompt .bar .lbl{color:#8b949e;font-size:12px;font-family:ui-monospace,Menlo,monospace;margin-left:6px}
   .prompt .bar .lbl.x{color:#7ee2b8}
   .prompt .body{padding:15px 17px;color:var(--termtx);white-space:pre-wrap;word-break:break-word;font:13px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace}
-  .prompt .body .caret{color:var(--accent);font-weight:700}
-  .analysis{border-left:3px solid var(--accent);background:#fffdf7;padding:12px 16px;margin:10px 0 26px;border-radius:0 10px 10px 0}
-  .analysis h4{margin:2px 0 8px;font-size:14.5px;color:#a9791b}
+  .prompt .body .caret{color:#58a6ff;font-weight:700}
+  .analysis{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;margin:10px 0 26px;border-radius:0 10px 10px 0}
+  .analysis h4{margin:2px 0 8px;font-size:14.5px;color:var(--accent)}
   .analysis .row{display:flex;gap:10px;margin:7px 0;font-size:14px}
   .analysis .row b{flex:none;min-width:118px;color:var(--ink)}
-  /* 바이브코딩 흐름 스텝 */
   .flow{margin-top:16px}
   .step{display:grid;grid-template-columns:52px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--line)}
   .step:last-child{border-bottom:0}
   .step .no{width:44px;height:44px;border-radius:50%;background:var(--accent);color:#fff;font-weight:800;font-size:18px;display:grid;place-items:center}
-  .step h4{margin:2px 0 4px;font-size:16px}
+  .step h4{margin:2px 0 4px;font-size:16px;color:var(--ink)}
   .step .who{font-size:12px;font-weight:700;color:var(--muted)}
-  .step .who b{color:var(--claude)}
-  .live{display:block;text-align:center;background:linear-gradient(135deg,#2f6f57,#255c48);color:#fff;padding:20px;border-radius:14px;margin:26px 0 6px;text-decoration:none;box-shadow:0 8px 22px var(--shadow)}
-  .live b{font-size:19px} .live span{display:block;font-size:13px;opacity:.85;margin-top:4px}
+  .step .who b{color:var(--accent)}
+  .live{display:block;text-align:center;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;padding:20px;border-radius:14px;margin:26px 0 6px;box-shadow:0 10px 26px rgba(37,99,235,.28)}
+  .live:hover{text-decoration:none} .live b{font-size:19px} .live span{display:block;font-size:13px;opacity:.9;margin-top:4px}
   .foot{margin-top:34px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
-  /* --- 반응형: 모바일에서 목차를 접이식으로 --- */
   @media(max-width:840px){
     .layout{grid-template-columns:1fr;gap:0}
     .toc{display:none}
     main.doc{padding:22px 0 80px}
-    .toc-m{display:block;position:sticky;top:0;z-index:20;margin:0 -22px 8px;background:rgba(250,247,240,.95);
-      backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
-    .toc-m summary{list-style:none;cursor:pointer;padding:12px 22px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:8px}
+    .toc-m{display:block;position:sticky;top:0;z-index:20;margin:0 -22px 8px;background:rgba(247,249,252,.95);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+    .toc-m summary{list-style:none;cursor:pointer;padding:12px 22px;font-weight:800;font-size:14px;color:var(--ink);display:flex;align-items:center;gap:8px}
     .toc-m summary::-webkit-details-marker{display:none}
     .toc-m summary::after{content:"▾";margin-left:auto;color:var(--muted)}
     .toc-m[open] summary::after{content:"▴"}
     .toc-m .links{padding:4px 12px 12px}
-    .toc-m a{display:block;padding:9px 10px;border-radius:8px;color:#6b5d47;font-size:14px;text-decoration:none;border-bottom:1px solid #f3ece0}
+    .toc-m a{display:block;padding:9px 10px;border-radius:8px;color:var(--muted);font-size:14px;border-bottom:1px solid #eef2f7}
     .toc-m a .i{color:var(--accent);font-weight:800;margin-right:6px}
-    h1{font-size:25px} h2{font-size:20px;margin-top:40px}
-    .prompt .body{font-size:12px}
+    h1{font-size:26px} h2{font-size:20px;margin-top:42px} .prompt .body{font-size:12px}
   }
 </style>
 </head>
@@ -125,7 +122,6 @@
   </nav>
 
   <main class="doc">
-
     <details class="toc-m">
       <summary>📑 목차</summary>
       <div class="links">
@@ -154,9 +150,19 @@
       <div class="card"><h4>🎤 관리자 <code>/admin/코드</code></h4>강사 조종석. 질문 띄우기/다음, 메시지 삭제·고정, 결과 내보내기(txt). 비밀키로 보호.</div>
       <div class="card"><h4>💬 챗룸(백채널)</h4>질문·투표와 별개로 항상 열리는 캐주얼 채팅. 오른쪽 위 플로팅 버튼으로 연다.</div>
     </div>
-    <div class="glo"><b>실시간은 어떻게?</b> <b>SSE(Server-Sent Events)</b> —
-    <b>쉽게 말해</b> "서버가 브라우저로 새 소식을 계속 밀어주는 한 방향 통로". 누가 글을 남기면
-    접속 중인 모든 화면에 즉시 반영된다. 저장은 거창한 DB 대신 <b>텍스트 파일에 한 줄씩 쌓는(JSONL)</b> 가장 단순한 방식.</div>
+
+    <h3>💡 개념 하나 — "실시간"은 어떻게 되나요? (SSE)</h3>
+    <p><b>SSE(Server-Sent Events)</b>는 <b>쉽게 말해</b> "서버가 브라우저 쪽으로 새 소식을 계속 밀어주는 한 방향 통로"다.
+    누군가 글을 남기면 서버가 <b>접속 중인 모든 화면</b>에 즉시 밀어 넣어, 새로고침 없이 갱신된다.</p>
+    <pre class="mermaid">
+flowchart LR
+  A["청중 폰<br/>메시지·투표"] -->|"① 전송(POST)"| S["서버<br/>(Node)"]
+  S -.->|"② 파일에 기록"| J[("JSONL 파일")]
+  S ==>|"③ 실시간 push (SSE)"| P["🖥️ 빔프로젝터"]
+  S ==>|"③ 실시간 push (SSE)"| M["🎤 관리자"]
+  S ==>|"③ 실시간 push (SSE)"| B["🙋 다른 청중들"]
+    </pre>
+    <p class="pill">저장도 거창한 DB 없이 <b>텍스트 파일에 한 줄씩 쌓는(JSONL)</b> 가장 단순한 방식을 썼다.</p>
 
     <h3>📸 실제 화면 (실제 강의 · ewha)</h3>
     <p class="pill">실제로 진행된 강의 이벤트(ewha)의 라이브 화면. 설문 결과는 그대로, 채팅 내용은 개인정보 보호를 위해 블러 처리했다.</p>
@@ -175,16 +181,22 @@
       <div class="stat"><div class="n">~2시간</div><div class="l">Phase 0–3 완성<br>(관리자·프로젝터·실시간 동기화)</div></div>
       <div class="stat"><div class="n">$0</div><div class="l">서버 비용<br>(Oracle Cloud 무료 등급)</div></div>
     </div>
-    <h3>"클라우드 배포"란 — 내 컴퓨터를 넘어 남들이 쓰게 만들기</h3>
+
+    <h3>💡 개념 하나 — "클라우드 배포"란?</h3>
     <p>만든 걸 노트북에서만 돌리면 나만 쓴다. <b>배포(deploy)</b>는 그걸 인터넷에 올려 누구나 접속하게 만드는 일이다.
-    이 서비스가 실제로 올라가 있는 곳(<code>ssh prod</code>로 접속해 확인한 현재 상태):</p>
+    이 서비스가 실제로 굴러가는 구조(<code>ssh prod</code>로 확인한 현재 상태):</p>
+    <pre class="mermaid">
+flowchart LR
+  U["🌐 사용자 브라우저<br/>qr-poll.physical-spark.com"] --> CF["Cloudflare<br/>Tunnel<br/>(안전한 통로)"]
+  CF --> N["OCI 무료 서버<br/>Ampere A1 · Node<br/>systemd로 상시 가동"]
+  N --> J[("JSONL 파일<br/>메시지·투표 저장")]
+    </pre>
     <ul>
-      <li><b>서버</b>: <b>Oracle Cloud(OCI) Always Free — Ampere A1</b> 인스턴스. <b>쉽게 말해</b> 오라클이 무료로 주는 ARM 서버. 사양은 <code>Ubuntu 20.04 · ARM(aarch64) · 4 vCPU · 24GB RAM</code>이고 <b>19주 넘게 무중단 가동</b> 중. 월 요금 <b>$0</b>.</li>
-      <li><b>항상 켜두기</b>: <b>systemd</b>로 앱을 등록해 꺼지면 자동 재시작. ("관리인"이 상주하는 셈)</li>
-      <li><b>연결 통로</b>: <b>Cloudflare Tunnel</b> — 방화벽·포트를 열지 않고 서버를 인터넷에 안전하게 잇는 통로. (원래 쓰려던 nginx 방식이 서버 사정으로 막혀 이걸로 우회)</li>
-      <li><b>주소</b>: 직접 산 도메인 <b>qr-poll.physical-spark.com</b>을 그 통로에 연결. QR은 접속 주소를 자동으로 담는다.</li>
+      <li><b>서버</b>: <b>Oracle Cloud(OCI) Always Free — Ampere A1</b>. 오라클이 무료로 주는 ARM 서버(<code>Ubuntu · 4 vCPU · 24GB</code>), <b>19주 넘게 무중단</b>, 월 <b>$0</b>.</li>
+      <li><b>항상 켜두기</b>: <b>systemd</b>로 등록해 꺼지면 자동 재시작.</li>
+      <li><b>연결 통로</b>: <b>Cloudflare Tunnel</b> — 방화벽·포트를 열지 않고 서버를 인터넷에 안전하게 잇는다.</li>
+      <li><b>주소</b>: 직접 산 도메인을 통로에 연결. QR은 접속 주소를 자동으로 담는다.</li>
     </ul>
-    <p class="pill">즉, 무료 클라우드 + 터널 + 도메인으로 <b>비용 없이 실서비스처럼</b> 운영 중이다.</p>
     <h3>쓴 서비스</h3>
     <div class="svc">
       <figure><img src="img/svc-oci.png" alt="Oracle Cloud Free Tier" loading="lazy" /><figcaption>Oracle Cloud — 무료 서버(Ampere A1)</figcaption></figure>
@@ -311,28 +323,26 @@ github repo 에 public 으로 만들고 계속 commit push 하면서 만들어�
 
     <h2 id="s7"><span class="num">7</span>바이브코딩은 이렇게 흘러갑니다</h2>
     <p class="sub">코드를 한 줄도 안 써도 괜찮다 — 이 6가지가 계속 돌아간다</p>
+    <pre class="mermaid">
+flowchart LR
+  A["🎯 말한다<br/>사람"] --> B["🛠️ 만든다<br/>AI"]
+  B --> C["👀 확인한다<br/>사람+AI"]
+  C --> D["🔁 고친다<br/>사람"]
+  D --> B
+  C --> E["🚀 올린다<br/>AI"]
+  E --> F["🌱 키운다<br/>반복"]
+  F --> A
+    </pre>
     <div class="flow">
-      <div class="step"><div class="no">1</div><div>
-        <h4>🎯 말한다</h4><div class="who"><b>사람</b></div>
-        <p>"이런 걸 만들고 싶어" — 목표를 아는 서비스에 빗대고, 범위를 좁혀서 한 문단으로. 완벽할 필요 없다.</p></div></div>
-      <div class="step"><div class="no">2</div><div>
-        <h4>🛠️ 만든다</h4><div class="who">AI</div>
-        <p>AI가 파일을 만들고 코드를 쓰고, 필요한 도구(서버·라이브러리)를 스스로 고른다. 내 노트북에서 일단 돌아가게 한다.</p></div></div>
-      <div class="step"><div class="no">3</div><div>
-        <h4>👀 확인한다</h4><div class="who">AI가 보여주고 · <b>사람</b>이 본다</div>
-        <p>말로 "됐어요"가 아니라 <b>실제 화면·스크린샷·실행 결과</b>로 확인. 이 프로젝트에선 AI가 브라우저로 직접 찍어 54번 확인했다.</p></div></div>
-      <div class="step"><div class="no">4</div><div>
-        <h4>🔁 고친다</h4><div class="who"><b>사람</b></div>
-        <p>"이건 오른쪽 위로 / 이 글자 작게 / 이건 빼줘"처럼 구체적으로. 고민되면 "잘 모르겠는데 어떻게 할까?"라고 물어도 된다.</p></div></div>
-      <div class="step"><div class="no">5</div><div>
-        <h4>🚀 올린다</h4><div class="who">AI</div>
-        <p>인터넷에 배포해 남들이 쓰게 만든다(서버·도메인·항상 켜두기). 무료 클라우드로 <b>$0</b>에도 가능하다.</p></div></div>
-      <div class="step"><div class="no">6</div><div>
-        <h4>🌱 키운다</h4><div class="who">반복</div>
-        <p>한 번에 완성하지 말고 작은 버전(MVP)부터. 되면 다음 기능(phase)으로. 막히면? <b>더 잘게 쪼개서</b> 부탁하면 된다(이 프로젝트의 Codex 구간처럼).</p></div></div>
+      <div class="step"><div class="no">1</div><div><h4>🎯 말한다</h4><div class="who"><b>사람</b></div><p>"이런 걸 만들고 싶어" — 목표를 아는 서비스에 빗대고, 범위를 좁혀서 한 문단으로. 완벽할 필요 없다.</p></div></div>
+      <div class="step"><div class="no">2</div><div><h4>🛠️ 만든다</h4><div class="who">AI</div><p>AI가 파일을 만들고 코드를 쓰고, 필요한 도구(서버·라이브러리)를 스스로 고른다. 내 노트북에서 일단 돌아가게 한다.</p></div></div>
+      <div class="step"><div class="no">3</div><div><h4>👀 확인한다</h4><div class="who">AI가 보여주고 · <b>사람</b>이 본다</div><p>말로 "됐어요"가 아니라 <b>실제 화면·스크린샷·실행 결과</b>로 확인. 이 프로젝트에선 AI가 브라우저로 직접 찍어 54번 확인했다.</p></div></div>
+      <div class="step"><div class="no">4</div><div><h4>🔁 고친다</h4><div class="who"><b>사람</b></div><p>"이건 오른쪽 위로 / 이 글자 작게 / 이건 빼줘"처럼 구체적으로. 고민되면 "잘 모르겠는데 어떻게 할까?"라고 물어도 된다.</p></div></div>
+      <div class="step"><div class="no">5</div><div><h4>🚀 올린다</h4><div class="who">AI</div><p>인터넷에 배포해 남들이 쓰게 만든다(서버·도메인·항상 켜두기). 무료 클라우드로 <b>$0</b>에도 가능하다.</p></div></div>
+      <div class="step"><div class="no">6</div><div><h4>🌱 키운다</h4><div class="who">반복</div><p>한 번에 완성하지 말고 작은 버전(MVP)부터. 되면 다음 기능(phase)으로. 막히면? <b>더 잘게 쪼개서</b> 부탁하면 된다.</p></div></div>
     </div>
     <div class="glo"><b>역할 나누기 한 줄 요약:</b> <b>사람</b>은 방향·판단·검증을, <b>AI</b>는 실행·반복·기록을 맡는다.
-    당신이 코드를 몰라도 <b>무엇을·왜·어디까지</b>를 계속 말해주면, 서비스가 실제로 세상에 나온다.</div>
+    코드를 몰라도 <b>무엇을·왜·어디까지</b>를 계속 말해주면, 서비스가 실제로 세상에 나온다.</div>
 
     <a class="live" href="https://qr-poll.physical-spark.com" target="_blank" rel="noopener">
       <b>🔗 직접 써보기 — qr-poll.physical-spark.com</b>
@@ -347,23 +357,31 @@ github repo 에 public 으로 만들고 계속 commit push 하면서 만들어�
   </main>
 </div>
 
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad:true, theme:'base', securityLevel:'loose',
+    themeVariables:{
+      primaryColor:'#eef4ff', primaryBorderColor:'#2563eb', primaryTextColor:'#1f2937',
+      lineColor:'#dc2626', secondaryColor:'#f1f5fb', tertiaryColor:'#f8fafc',
+      fontFamily:'-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif', fontSize:'14px'
+    }
+  });
+</script>
 <script>
-  // 스크롤 스파이: 현재 섹션을 좌측 목차에 하이라이트
   (function(){
     var links=[].slice.call(document.querySelectorAll('.toc a'));
     var map={}; links.forEach(function(a){map[a.getAttribute('href').slice(1)]=a;});
     var secs=[].slice.call(document.querySelectorAll('main h2[id]'));
-    if(!('IntersectionObserver' in window)||!secs.length) return;
-    var io=new IntersectionObserver(function(ents){
-      ents.forEach(function(e){
-        if(e.isIntersecting){
+    if('IntersectionObserver' in window && secs.length){
+      var io=new IntersectionObserver(function(ents){
+        ents.forEach(function(e){ if(e.isIntersecting){
           links.forEach(function(a){a.classList.remove('active');});
           var a=map[e.target.id]; if(a) a.classList.add('active');
-        }
-      });
-    },{rootMargin:'-10% 0px -80% 0px'});
-    secs.forEach(function(s){io.observe(s);});
-    // 모바일: 목차 링크 누르면 접기
+        }});
+      },{rootMargin:'-10% 0px -80% 0px'});
+      secs.forEach(function(s){io.observe(s);});
+    }
     var m=document.querySelector('.toc-m');
     if(m) m.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){m.removeAttribute('open');});});
   })();
