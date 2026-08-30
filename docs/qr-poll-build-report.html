@@ -81,6 +81,22 @@
   .analysis h4{margin:2px 0 8px;font-size:14.5px;color:var(--accent)}
   .analysis .row{display:flex;gap:10px;margin:7px 0;font-size:14px}
   .analysis .row b{flex:none;min-width:118px;color:var(--ink)}
+  /* 프롬프트 카드(압축형) */
+  .pc{margin:22px 0 26px}
+  .pc .lab{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+  .pc .badge{font-size:11px;font-weight:800;letter-spacing:.03em;padding:3px 8px;border-radius:6px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line)}
+  .pc .badge.x{background:#ecfdf5;color:var(--green);border-color:#a7f3d0}
+  .pc .ttl{font-weight:700;color:var(--ink);font-size:15.5px}
+  .pc .prompt{margin:0}
+  .take{display:flex;gap:9px;margin-top:9px;font-size:14px;background:#f8fafc;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:9px 13px}
+  .take b{flex:none;color:var(--accent)}
+  /* 대가 프레임워크 카드 */
+  .fw{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:16px 0;box-shadow:0 4px 14px var(--shadow)}
+  .fw .who{font-size:12.5px;font-weight:800;color:var(--accent);letter-spacing:.02em;text-transform:uppercase}
+  .fw h4{margin:5px 0 8px;font-size:17px;color:var(--ink)}
+  .fw .idea{color:var(--body);font-size:14.5px;margin:0 0 12px}
+  .fw .map{background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:9px;padding:11px 14px;font-size:14px;color:#1e3a5f}
+  .fw .map b{color:var(--accent)}
   .flow{margin-top:16px}
   .step{display:grid;grid-template-columns:52px 1fr;gap:14px;padding:14px 0;border-bottom:1px dashed var(--line)}
   .step:last-child{border-bottom:0}
@@ -116,9 +132,10 @@
     <a href="#s2"><span class="i">2</span>얼마나 빨리·어디에 배포</a>
     <a href="#s3"><span class="i">3</span>두 AI로 만들어 비교</a>
     <a href="#s4"><span class="i">4</span>전체 프롬프트 흐름</a>
-    <a href="#s5"><span class="i">5</span>인상적인 프롬프트</a>
-    <a href="#s6"><span class="i">6</span>좋은 프롬프트 6단계</a>
-    <a href="#s7"><span class="i">7</span>바이브코딩은 이렇게</a>
+    <a href="#s5"><span class="i">5</span>인상적인 프롬프트 12선</a>
+    <a href="#s6"><span class="i">6</span>대가들의 프레임워크로 보면</a>
+    <a href="#s7"><span class="i">7</span>좋은 프롬프트 6단계</a>
+    <a href="#s8"><span class="i">8</span>바이브코딩은 이렇게</a>
   </nav>
 
   <main class="doc">
@@ -129,9 +146,10 @@
         <a href="#s2"><span class="i">2</span>얼마나 빨리·어디에 배포</a>
         <a href="#s3"><span class="i">3</span>두 AI로 만들어 비교</a>
         <a href="#s4"><span class="i">4</span>전체 프롬프트 흐름</a>
-        <a href="#s5"><span class="i">5</span>인상적인 프롬프트</a>
-        <a href="#s6"><span class="i">6</span>좋은 프롬프트 6단계</a>
-        <a href="#s7"><span class="i">7</span>바이브코딩은 이렇게</a>
+        <a href="#s5"><span class="i">5</span>인상적인 프롬프트 12선</a>
+        <a href="#s6"><span class="i">6</span>대가들의 프레임워크로 보면</a>
+        <a href="#s7"><span class="i">7</span>좋은 프롬프트 6단계</a>
+        <a href="#s8"><span class="i">8</span>바이브코딩은 이렇게</a>
       </div>
     </details>
 
@@ -243,8 +261,8 @@ flowchart LR
       <div class="ev c"><div class="t">8/28 밤–8/30 · Claude</div><div class="h">복귀 → 정리·리브랜딩·도메인·내보내기</div>데드코드/중복 제거, 데모 복구, qr-chat→<b>qr-poll</b> 리브랜딩, 도메인 전환, 결과 txt export, 이 리포트.</div>
     </div>
 
-    <h2 id="s5"><span class="num">5</span>인상적인 프롬프트 — 원문 + 분석</h2>
-    <p class="sub">실제 보낸 말 <b>원문 그대로</b>. 왜 좋은 지시였는지, 모델에 따라 어떻게 달라졌는지</p>
+    <h2 id="s5"><span class="num">5</span>인상적인 프롬프트 12선 — 원문 + 분석</h2>
+    <p class="sub">두 세션에서 사람이 보낸 지시는 총 <b>약 72개</b>(Claude 18 · Codex 54). 그중 배울 점이 뚜렷한 12개를 원문 그대로 골랐다.</p>
 
     <h3>① 방향을 통째로 세운 첫 프롬프트 <span class="pill">(Claude)</span></h3>
     <div class="prompt">
@@ -308,7 +326,157 @@ github repo 에 public 으로 만들고 계속 commit push 하면서 만들어�
       <div class="row"><b>배운 점</b><span>강한 모델엔 위임, 약한 모델엔 분해+검증. 프롬프트 크기를 모델에 맞추는 것도 실력.</span></div>
     </div>
 
-    <h2 id="s6"><span class="num">6</span>따라 하기 — 좋은 프롬프트 6단계</h2>
+    <h3>④ 계획을 다시 협상한다 <span class="pill">(Codex)</span></h3>
+    <div class="pc">
+      <div class="prompt">
+        <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl x">사용자 → Codex</span></div>
+        <div class="body"><span class="caret">❯ </span>그렇지 근데 지금 좀 phase를 수정해야 할 거 같다. 꼭 해야 하는게 있거든 그래서 일단 plan을 다시 너와 만들어보자.
+
+1. 메시지 월 -&gt; slido와 같이 '청중 Q&A'라고 따로 탭이 있어야 하고, 이건 그냥 다른 poll과는 별개로 늘 돌아가야 하는거지.
+2. 그럼 기존의 그 메시지 (7)이건 또 다른 poll 중에 하나인 거다. 그래서 poll들끼리는 그 위로 올리기 아래로 내리기 같은 그런 버튼으로 순서편집을 가능하게 하고 각 poll은 인기순과 최신순으로 구분을 하는 버튼이 필요하다.
+3. 또 좀 미려하게 보이기 위해 최소한의 에니메이션은 필요하다.
+
+이런것들이 있어야. phase4,5의 내용들을 할 수 있을 거 같거든. 그러니까 이런걸 각 phase 4, 5, 6으로 하고 지금의 phase 4,5는 phase 7,8로 미루는게 어떨까.</div>
+      </div>
+      <div class="take"><b>배울 점</b><span>번호를 매겨 <b>요구를 분해</b>하고, <b>왜 필요한지</b>("이게 있어야 4,5를 할 수 있다")까지 설명한 뒤 순서 조정을 제안했다. 바로 코딩시키지 않고 <b>먼저 계획을 합의</b>한 뒤 다음 턴에서 딱 한마디 — <code>Implement the plan.</code></span></div>
+    </div>
+
+    <h3>⑤ 스스로 안전장치를 요구한다 <span class="pill">(Claude)</span></h3>
+    <div class="pc">
+      <div class="prompt">
+        <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl">사용자 → Claude Code</span></div>
+        <div class="body"><span class="caret">❯ </span>라이브로 태스트 하고 싶은데. 데이터 리셋은 하지말고.
+
+여기들어가서 qr코드 를 입력하거나 새로 만들기 두개를 만들어줘. 물론 내 서비스가 터치면 안되니. 기본적으로 최대 qr코드를 10개를 제한한다던지 하자</div>
+      </div>
+      <div class="take"><b>배울 점</b><span>기능만 시키지 않고 <b>"터지면 안 되니 10개 제한"</b>이라는 <b>가드레일</b>을 함께 요구했다. 또 "데이터 리셋은 하지 말고" — <b>건드리면 안 되는 것</b>을 먼저 못 박는 것도 좋은 습관.</span></div>
+    </div>
+
+    <h3>⑥ 실제 사용 맥락(도메인 지식)을 넣는다 <span class="pill">(Claude)</span></h3>
+    <div class="pc">
+      <div class="prompt">
+        <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl">사용자 → Claude Code</span></div>
+        <div class="body"><span class="caret">❯ </span>그렇지. 안내를 좀 더 넣어주고. 강사용으로는 일반적으로 맥북모니터에 띄우는 창 빔프로젝터용 창 이 있을거니. 그것까지 만들어줘. 즉 관리자 창에는 그 좋아요 순 sort라던지 삭제라던지 다음 질문으로 넘기기 라던지 그런게 있겠지. phase 3 방향과 함께 의논하고 진행하자.</div>
+      </div>
+      <div class="take"><b>배울 점</b><span>AI가 알 수 없는 건 <b>현실의 사용 장면</b>이다. "강사는 맥북 창 + 빔 창 두 개를 쓴다"는 한 문장이 <b>제품 구조(관리자/프로젝터 분리)</b>를 통째로 결정했다. 게다가 "의논하고 진행하자"로 <b>합의 후 실행</b>을 요구.</span></div>
+    </div>
+
+    <h3>⑦ 관찰한 증상을 그대로 말하고 확인을 요청한다 <span class="pill">(Codex)</span></h3>
+    <div class="pc">
+      <div class="prompt">
+        <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl x">사용자 → Codex</span></div>
+        <div class="body"><span class="caret">❯ </span>그리고 청중이나 관리자나 빔프로젝터나 실시간 반영이 되어야 하는데 내가 좋아요를 눌르고 새로고침을 해야 되는거 같은데 맞나?</div>
+      </div>
+      <div class="take"><b>배울 점</b><span>"버그 고쳐줘"가 아니라 <b>기대(실시간 반영) + 실제 관찰(새로고침해야 함) + 확인 질문(맞나?)</b>. 비개발자도 쓸 수 있는 최고의 버그 리포트 형식이다.</span></div>
+    </div>
+
+    <h3>⑧ 말 말고 증거를 요구한다 <span class="pill">(Codex)</span></h3>
+    <div class="pc">
+      <div class="prompt">
+        <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl x">사용자 → Codex</span></div>
+        <div class="body"><span class="caret">❯ </span>show the screenshot</div>
+      </div>
+      <div class="prompt" style="margin-top:10px">
+        <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl x">사용자 → Codex</span></div>
+        <div class="body"><span class="caret">❯ </span>아니다. 니가 맞다면 … 음ㅇ 어떻게 증명할래 how to</div>
+      </div>
+      <div class="take"><b>배울 점</b><span>AI가 "고쳤습니다"라고 해도 <b>그대로 믿지 않는다.</b> "스크린샷 보여줘 / 어떻게 증명할래"는 이 프로젝트에서 가장 값싸고 강력한 검증 도구였다.</span></div>
+    </div>
+
+    <h3>⑨ 막히면 기능이 아니라 설계를 단순화한다 <span class="pill">(Codex)</span></h3>
+    <div class="pc">
+      <div class="prompt">
+        <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl x">사용자 → Codex</span></div>
+        <div class="body"><span class="caret">❯ </span>ㄴㅓ무 오류가 많네. 먼저 채팅창이 그냥 아예 페이지를 이동하게 하자 지금같이 창이 틀어지는것은 아이폰에는 안맞다. 또 그 채팅룸이 아니면 사실 그 지금 청중의 페이지에 아래의 글자 입력 필드는 필요없다.</div>
+      </div>
+      <div class="take"><b>배울 점</b><span>오류가 반복될 때 더 복잡하게 고치는 대신 <b>구조를 더 쉬운 쪽으로 바꿨다</b>(오버레이 → 그냥 페이지 이동). 동시에 <b>불필요한 요소를 삭제</b>. AI를 이기려 하지 말고 <b>문제를 쉬운 문제로 바꾸는 것</b>이 요령.</span></div>
+    </div>
+
+    <h3>⑩ 우선순위를 잘라낸다 <span class="pill">(Claude)</span></h3>
+    <div class="pc">
+      <div class="prompt">
+        <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl">사용자 → Claude Code</span></div>
+        <div class="body"><span class="caret">❯ </span>phase4는 잠시 하고. 그 최소한으로 관리자가 focus시키는걸 사용자도 보이게 해줘. 지금 사용자는 그 다 보이거든 즉 slido같이 q&a과 poll을 완전히 놔두는거지.</div>
+      </div>
+      <div class="take"><b>배울 점</b><span>다음 단계로 가기 전에 <b>"지금 제일 아쉬운 것 하나"</b>를 먼저 끼워 넣었다. 로드맵은 지키되 <b>필요하면 순서를 바꾸는 것</b>이 제품 감각.</span></div>
+    </div>
+
+    <h3>⑪ AI에게 다른 AI의 작업을 감사시킨다 <span class="pill">(Claude)</span></h3>
+    <div class="pc">
+      <div class="prompt">
+        <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl">사용자 → Claude Code</span></div>
+        <div class="body"><span class="caret">❯ </span>다른 ai agent로 좀 개선을 햇는데, 너가 보고 정리를 좀 해줘.</div>
+      </div>
+      <div class="take"><b>배울 점</b><span>이 한 줄이 <b>죽은 코드·중복 전송·사라진 데모 이벤트</b>를 찾아냈다. 한 모델이 넓게 만들고 <b>다른 모델이 검수</b>하는 교차 검증은 사람이 코드를 못 읽어도 쓸 수 있는 안전망이다.</span></div>
+    </div>
+
+    <h3>⑫ 스타일은 말로 설명하지 말고 레퍼런스로 <span class="pill">(Claude)</span></h3>
+    <div class="pc">
+      <div class="prompt">
+        <div class="bar"><span class="dots"><i class="d1"></i><i class="d2"></i><i class="d3"></i></span><span class="lbl">사용자 → Claude Code</span></div>
+        <div class="body"><span class="caret">❯ </span>청중 쪽이 짤림 크롬 cdp 해드로 찍어야 할듯. 중간 중간 어려운 개념들을 소개할때는 mermaid로 설명해줘. https://bit-habit.com 을 참고해라. … 훨씬 전문가 스러워 보이거든 색깔 테마마저도. 말이야</div>
+      </div>
+      <div class="take"><b>배울 점</b><span>"예쁘게 해줘"는 통하지 않는다. <b>참고 URL + 구체 수단(mermaid) + 이유(전문가스러움)</b>를 함께 주면 결과가 확 달라진다. 지금 보고 있는 이 페이지가 그 프롬프트의 결과물이다.</span></div>
+    </div>
+
+    <h2 id="s6"><span class="num">6</span>대가들의 프레임워크로 보면</h2>
+    <p class="sub">AI 코딩을 오래 관찰해온 실무자들의 공개된 주장과, 이 프로젝트에서 실제로 벌어진 일의 대응</p>
+    <p class="pill">아래 인용은 각 인물이 공개적으로 밝혀온 관점의 <b>요약·의역</b>이며, 원문 그대로의 인용문이 아니다.</p>
+
+    <div class="fw">
+      <div class="who">Andrej Karpathy · 전 Tesla AI 총괄, "vibe coding" 이라는 말을 만든 사람</div>
+      <h4>① 자율성 슬라이더(autonomy slider) — AI를 얼마나 풀어줄지는 조절하는 것</h4>
+      <p class="idea">AI에게 한 번에 큰 덩어리를 맡길수록 결과 검증이 어려워진다. 그는 AI를 <b>짧은 목줄에 두고 작은 단위로 일을 시키라</b>고 권한다. 자율성은 켜고 끄는 스위치가 아니라 <b>상황에 맞게 밀고 당기는 슬라이더</b>다.</p>
+      <div class="map"><b>이 프로젝트에서:</b> 같은 사람이 Claude에겐 <b>18번</b>의 큰 지시로 맡겼고, 결과가 자주 어긋난 Codex에겐 <b>54번</b>의 잘게 쪼갠 지시를 보냈다. 모델을 바꾼 게 아니라 <b>슬라이더를 내린 것</b>이다.</div>
+    </div>
+
+    <div class="fw">
+      <div class="who">Andrej Karpathy</div>
+      <h4>② 진짜 병목은 생성이 아니라 검증(verification) 루프다</h4>
+      <p class="idea">AI는 코드를 몇 초 만에 쏟아낸다. 느린 쪽은 <b>사람이 그게 맞는지 확인하는 속도</b>다. 그래서 그는 <b>검증을 빠르게 만드는 것</b>(눈으로 즉시 확인 가능한 화면·구체적인 작은 변경)을 강조한다.</p>
+      <pre class="mermaid">
+flowchart LR
+  G["AI가 만든다<br/>(몇 초)"] --> V{"사람이 확인한다<br/>← 진짜 병목"}
+  V -->|"괜찮다"| N["다음 단계로"]
+  V -->|"아니다"| C["구체적으로 교정"]
+  C --> G
+      </pre>
+      <div class="map"><b>이 프로젝트에서:</b> Claude는 브라우저로 화면을 <b>54번</b> 직접 캡처해 확인했고, 사용자는 <code>show the screenshot</code>·<code>어떻게 증명할래</code>로 증거를 요구했다. 반대로 시각 검증이 없던 Codex 구간에서 <b>UI 회귀</b>가 가장 많이 생겼다.</div>
+    </div>
+
+    <div class="fw">
+      <div class="who">Simon Willison · Django 공동창시자, LLM 실무 활용 기록으로 유명</div>
+      <h4>③ 절대 위임할 수 없는 한 가지 — "코드가 실제로 돌아가는지 확인하는 일"</h4>
+      <p class="idea">그는 LLM 코딩에서 <b>맥락(context)을 충분히 주는 것</b>과 <b>정확히 무엇을 원하는지 지시하는 것</b>이 결과를 좌우한다고 말한다. 그리고 <b>결과를 직접 테스트하는 책임만은 사람이 진다</b>고 못 박는다.</p>
+      <div class="map"><b>이 프로젝트에서:</b> 사용자는 매번 <b>라이브 URL에 직접 들어가</b> "present 하니깐 안되네?", "청중 쪽이 짤림", "투표 취소가 안 되네?" 처럼 <b>본인이 실물을 확인</b>했다. 실제로 Cloudflare 캐시 버그는 이 확인이 아니었으면 못 잡았다.</div>
+    </div>
+
+    <div class="fw">
+      <div class="who">Addy Osmani · Google 엔지니어링 리더</div>
+      <h4>④ "70% 문제" — AI는 70%까지 데려다주고, 나머지 30%에서 실력이 갈린다</h4>
+      <p class="idea">AI로 초안은 놀랍도록 빨리 나오지만, <b>마지막 30%</b>(엣지 케이스·일관성·정리·운영)에서 경험이 필요하다. 비개발자는 여기서 "고칠수록 새 버그가 나는" 벽을 만난다고 그는 지적한다.</p>
+      <div class="map"><b>이 프로젝트에서:</b> Codex가 기능을 넓게 확장한 뒤 남은 <b>죽은 코드·에셋 버전 불일치·사라진 데모 이벤트</b>가 정확히 그 30%였다. 해결책은 사람이 코드를 파는 게 아니라 <b>다른 모델에게 감사를 시키는 것</b>이었다(프롬프트 ⑪).</div>
+    </div>
+
+    <div class="fw">
+      <div class="who">Anthropic · Claude Code 실무 가이드</div>
+      <h4>⑤ 탐색 → 계획 → 구현 → 커밋, 그리고 "일찍 자주 교정하라"</h4>
+      <p class="idea">공식 가이드는 바로 코드부터 쓰게 하지 말고 <b>먼저 조사하고 계획을 세우게 한 뒤</b> 구현시키라고 권한다. 또 <b>지시는 구체적으로</b>, 방향이 틀어지면 <b>끝까지 가기 전에 즉시 교정</b>하라고 한다.</p>
+      <div class="map"><b>이 프로젝트에서:</b> 첫 턴은 계획 모드로 <b>설계 합의 후</b> 구현했고, Codex에서도 <code>plan을 다시 너와 만들어보자</code> → <code>Implement the plan.</code> 순서를 밟았다. 어긋나면 <code>다시 롤백해서 … 왼쪽에 만들어</code>처럼 즉시 되돌렸다.</div>
+    </div>
+
+    <div class="fw">
+      <div class="who">업계 공통 관찰 · "명세(spec)가 곧 결과물"</div>
+      <h4>⑥ 코드보다 오래 남는 건 "무엇을 왜 만드는가"라는 글</h4>
+      <p class="idea">코드 작성 비용이 급격히 떨어지면서, 가치는 <b>의도를 정확히 글로 옮기는 능력</b>으로 옮겨간다. 잘 쓴 명세는 사람과 AI 모두를 정렬시키는 <b>단 하나의 원본</b>이 된다.</p>
+      <div class="map"><b>이 프로젝트에서:</b> 첫 프롬프트 한 문단이 사실상 <b>제품 명세서</b>였다(목표·제약·배포·검증·프로세스). 이후 모든 작업이 그 문단 위에서 굴러갔고, 로드맵 문서(<code>docs/ROADMAP.md</code>)가 두 AI 사이의 <b>공통 기준</b> 역할을 했다.</div>
+    </div>
+
+    <div class="glo"><b>여섯 사람의 이야기를 한 줄로 합치면:</b> AI에게 <b>무엇을·왜·어디까지</b>를 글로 정확히 주고(명세),
+    <b>한 번에 맡기는 크기를 조절하며</b>(자율성 슬라이더), <b>매번 눈으로 확인하고</b>(검증 루프),
+    <b>마지막 30%는 검수로 메운다</b>(교차 리뷰). 이 프로젝트는 우연히 그 네 가지를 다 했다.</div>
+
+    <h2 id="s7"><span class="num">7</span>따라 하기 — 좋은 프롬프트 6단계</h2>
     <p class="sub">위 사례에서 뽑은, 누구나 쓸 수 있는 틀</p>
     <ul>
       <li><b>1. 목표를 레퍼런스로</b> — "○○ 같은 걸 만들고 싶어"</li>
@@ -321,7 +489,7 @@ github repo 에 public 으로 만들고 계속 commit push 하면서 만들어�
     <div class="glo">핵심은 <b>완벽한 명세서가 아니라 "방향 + 제약 + 위임"</b>. 개발 용어를 다 몰라도
     <b>무엇을·왜·어디까지</b>만 분명히 말하면 AI가 나머지를 채운다.</div>
 
-    <h2 id="s7"><span class="num">7</span>바이브코딩은 이렇게 흘러갑니다</h2>
+    <h2 id="s8"><span class="num">8</span>바이브코딩은 이렇게 흘러갑니다</h2>
     <p class="sub">코드를 한 줄도 안 써도 괜찮다 — 이 6가지가 계속 돌아간다</p>
     <pre class="mermaid">
 flowchart LR
