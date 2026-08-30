@@ -30,6 +30,12 @@
     const feed = document.getElementById("feed");
     const pollbox = document.getElementById("pollbox");
     document.getElementById("code").textContent = code;
+    // ?blur=1 : 메시지 본문 블러(개인정보 스크린샷용)
+    if (new URLSearchParams(location.search).get("blur") === "1") {
+      const s = document.createElement("style");
+      s.textContent = "#feed .txt,#chatFeed .txt{filter:blur(7px)}";
+      document.head.appendChild(s);
+    }
 
     const polls = new Map();
     const msgs = new Map();
