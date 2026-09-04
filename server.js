@@ -180,6 +180,14 @@ function pollCounts(code, poll) {
   return poll.options.map((_, i) => raw[i] || 0);
 }
 
+// polls 브로드캐스트용: 객관식은 현재 집계(counts)까지 실어 보낸다 (편집 후 막대가 0으로 보이지 않게)
+function pollsPayload(code, meta) {
+  return normalizeMeta(meta).polls.map((p) => ({
+    ...p,
+    counts: p.type === "choice" ? pollCounts(code, p) : undefined,
+  }));
+}
+
 function addVote(code, poll, opt, token = "") {
   if (opt < 0 || opt >= poll.options.length) return null;
   const r = room(code);
@@ -464,7 +472,7 @@ app.post("/admin/:code/poll/create", (req, res) => {
   poll.id = `poll-${Date.now()}-${crypto.randomInt(1000, 10000)}`;
   meta.polls.push({ ...poll, order: meta.polls.length });
   saveMeta(req.params.code, meta);
-  broadcast(req.params.code, { kind: "polls", polls: normalizeMeta(meta).polls });
+  broadcast(req.params.code, { kind: "polls", polls: pollsPayload(req.params.code, meta) });
   res.json({ ok: true, poll });
 });
 
@@ -475,7 +483,7 @@ app.post("/admin/:code/poll/:id/update", (req, res) => {
   if (i < 0 || !poll || (poll.id !== req.params.id && meta.polls.some((p) => p.id === poll.id))) return res.status(400).json({ error: "bad poll" });
   meta.polls[i] = { ...meta.polls[i], ...poll };
   saveMeta(req.params.code, meta);
-  broadcast(req.params.code, { kind: "polls", polls: normalizeMeta(meta).polls });
+  broadcast(req.params.code, { kind: "polls", polls: pollsPayload(req.params.code, meta) });
   res.json({ ok: true, poll: meta.polls[i] });
 });
 
@@ -486,7 +494,7 @@ app.post("/admin/:code/poll/:id/delete", (req, res) => {
   meta.polls.splice(i, 1);
   if (room(req.params.code).stage.focus === req.params.id) setStage(req.params.code, QA_ID, meta.qaSort);
   saveMeta(req.params.code, meta);
-  broadcast(req.params.code, { kind: "polls", polls: normalizeMeta(meta).polls });
+  broadcast(req.params.code, { kind: "polls", polls: pollsPayload(req.params.code, meta) });
   res.json({ ok: true });
 });
 
@@ -498,7 +506,7 @@ app.post("/admin/:code/poll/:id/move/:direction", (req, res) => {
   if (i < 0 || !d || j < 0 || j >= meta.polls.length) return res.status(400).json({ error: "cannot move poll" });
   [meta.polls[i], meta.polls[j]] = [meta.polls[j], meta.polls[i]];
   saveMeta(req.params.code, meta);
-  broadcast(req.params.code, { kind: "polls", polls: normalizeMeta(meta).polls });
+  broadcast(req.params.code, { kind: "polls", polls: pollsPayload(req.params.code, meta) });
   res.json({ ok: true, polls: normalizeMeta(meta).polls });
 });
 

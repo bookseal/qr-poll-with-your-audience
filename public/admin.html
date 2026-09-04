@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QR Poll · Presenter Console</title>
-  <link rel="stylesheet" href="/style.css?v=9" />
+  <link rel="stylesheet" href="/style.css?v=10" />
 </head>
 <body>
   <div class="wrap admin">
@@ -49,7 +49,7 @@
   </div>
 
   <script type="module">
-    import { connect, renderPoll, updatePoll, sortMessages, adminAction } from "/app.js?v=9";
+    import { connect, renderPoll, updatePoll, sortMessages, adminAction } from "/app.js?v=10";
     const parts = location.pathname.split("/");
     const code = parts.pop();
     const key = new URLSearchParams(location.search).get("key") || "";
@@ -165,12 +165,55 @@
       document.getElementById("mcount").textContent = `(${arr.length})`;
     }
 
+    // 인라인 poll 편집 (prompt() 다이얼로그는 브라우저가 차단하면 아무 반응이 없어 폼으로 대체)
+    let editingPoll = null;
+
+    function pollEditor(p) {
+      const form = document.createElement("form");
+      form.className = "polledit";
+      const q = document.createElement("input");
+      q.className = "pe-q"; q.value = p.q; q.placeholder = "Question"; q.required = true;
+      form.append(q);
+      let opts = null;
+      if (p.type === "choice") {
+        opts = document.createElement("input");
+        opts.className = "pe-o"; opts.value = (p.options || []).join(", ");
+        opts.placeholder = "Options, separated by commas";
+        form.append(opts);
+      }
+      const row = document.createElement("div"); row.className = "pe-row";
+      const save = document.createElement("button"); save.type = "submit"; save.className = "mini primary"; save.textContent = "Save";
+      const cancel = document.createElement("button"); cancel.type = "button"; cancel.className = "mini"; cancel.textContent = "Cancel";
+      const err = document.createElement("span"); err.className = "pe-err";
+      cancel.onclick = () => { editingPoll = null; renderPolls(); };
+      row.append(save, cancel, err); form.append(row);
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const body = {
+          id: p.id, type: p.type, q: q.value.trim(),
+          options: opts ? opts.value.split(",").map((x) => x.trim()).filter(Boolean) : [],
+        };
+        if (!body.q) { err.textContent = "질문을 입력하세요."; return; }
+        if (p.type === "choice" && body.options.length < 2) { err.textContent = "옵션은 2개 이상."; return; }
+        save.disabled = true; err.textContent = "";
+        const r = await adminAction(code, key, `poll/${p.id}/update`, body);
+        save.disabled = false;
+        if (!r) { err.textContent = "저장 실패 — 관리자 키를 확인하세요."; return; }
+        editingPoll = null;
+        polls.set(p.id, { ...polls.get(p.id), q: body.q, options: body.options });
+        renderPolls();
+      };
+      setTimeout(() => q.focus(), 0);
+      return form;
+    }
+
     function renderPolls() {
       pollsEl.replaceChildren(...pollOrder.map((id) => {
         const p = polls.get(id);
         const box = document.createElement("div");
         box.className = "pollwrap";
-        box.append(renderPoll(code, polls.get(id), false));
+        if (editingPoll === id) { box.append(pollEditor(p)); return box; }
+        box.append(renderPoll(code, p, false));
         const controls = document.createElement("div"); controls.className = "poll-controls";
         for (const [direction, text] of [["up", "▲"], ["down", "▼"]]) {
           const move = document.createElement("button"); move.type = "button"; move.className = "mini"; move.textContent = text;
@@ -179,17 +222,10 @@
           controls.append(move);
         }
         const edit = document.createElement("button"); edit.type = "button"; edit.className = "mini"; edit.textContent = "Edit";
-        edit.onclick = async () => {
-          const p = polls.get(id); const q = prompt("Question", p.q); if (q === null) return;
-          const options = p.type === "choice" ? prompt("Options (comma-separated)", p.options.join(",")) : "";
-          if (options === null) return;
-          await adminAction(code, key, `poll/${id}/update`, { id, type: p.type, q, options: options.split(",") });
-        };
+        edit.onclick = () => { editingPoll = id; renderPolls(); };
         const del = document.createElement("button"); del.type = "button"; del.className = "mini danger"; del.textContent = "Delete";
         del.onclick = async () => { if (confirm("Delete this poll?")) await adminAction(code, key, `poll/${id}/delete`); };
-        const sort = document.createElement("button"); sort.type = "button"; sort.className = "mini"; sort.textContent = p.sort === "top" ? "Popular" : "Recent";
-        sort.onclick = () => adminAction(code, key, "stage", { focus: id, sort: p.sort === "top" ? "recent" : "top" });
-        controls.append(edit, del, sort); box.append(controls);
+        controls.append(edit, del); box.append(controls);
         return box;
       }));
     }
@@ -224,7 +260,11 @@
         if (w) updatePoll(w, counts);
       },
       onStage: (s) => { stage = { focus: s.focus, sort: s.sort }; renderStageBar(); renderPolls(); renderMessages(); },
-      onPolls: (items) => { polls.clear(); pollOrder = items.map((p) => (polls.set(p.id, p), p.id)); renderStageBar(); renderPolls(); },
+      onPolls: (items) => {
+        const prev = new Map(polls); polls.clear();
+        pollOrder = items.map((p) => { const old = prev.get(p.id); polls.set(p.id, { ...p, counts: p.counts ?? old?.counts }); return p.id; });
+        renderStageBar(); renderPolls();
+      },
     });
 
     let adminMeta = null;

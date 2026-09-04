@@ -268,3 +268,10 @@ button.ghost.small, button.small { font-size: 13px; padding: 8px 12px; }
 .export-bar a:hover { color: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+
+/* 인라인 poll 편집 폼 */
+.polledit { display: grid; gap: 8px; background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.polledit input { width: 100%; font: inherit; }
+.pe-row { display: flex; align-items: center; gap: 8px; }
+.mini.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.pe-err { color: #e5484d; font-size: 12px; }
