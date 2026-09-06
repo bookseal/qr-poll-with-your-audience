@@ -275,3 +275,11 @@ button.ghost.small, button.small { font-size: 13px; padding: 8px 12px; }
 .pe-row { display: flex; align-items: center; gap: 8px; }
 .mini.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .pe-err { color: #e5484d; font-size: 12px; }
+
+/* 발표자 이메일로 찾은 세션 목록 */
+.sessions { display: grid; gap: 8px; margin-top: 12px; }
+.sessions-title { color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.session { display: grid; gap: 2px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg2); color: var(--fg); }
+.session:hover { border-color: var(--accent); }
+.session b { font-size: 15px; }
+.session span { color: var(--muted); font-size: 12px; }

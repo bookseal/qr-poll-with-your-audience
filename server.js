@@ -306,6 +306,28 @@ app.post("/presenter/access", (req, res) => {
   res.json({ accessUrl: `/admin/${encodeURIComponent(code)}?key=${encodeURIComponent(meta.adminKey)}` });
 });
 
+// 발표자 이메일만으로 본인 이벤트 목록 조회 (임시 접근 — 이메일 인증은 추후)
+const lastLookup = new Map(); // ip -> ts
+app.post("/presenter/events", (req, res) => {
+  const ip = req.headers["cf-connecting-ip"] || req.ip;
+  if (Date.now() - (lastLookup.get(ip) || 0) < 1500)
+    return res.status(429).json({ error: "Please try again in a moment." });
+  lastLookup.set(ip, Date.now());
+  const email = String(req.body?.presenterEmail || "").trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: "Please enter a valid presenter email." });
+  const events = fs.readdirSync(EVENTS_DIR)
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => { try { return JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, f), "utf8")); } catch { return null; } })
+    .filter((m) => m && String(m.presenterEmail || "").toLowerCase() === email)
+    .map((m) => ({
+      code: m.code,
+      title: m.title,
+      polls: (m.polls || []).length,
+      accessUrl: `/admin/${encodeURIComponent(m.code)}?key=${encodeURIComponent(m.adminKey)}`,
+    }));
+  res.json({ events });
+});
+
 // 관리자 키 검증 (query.key 또는 body.key)
 function keyOk(meta, req) {
   const k = req.query.key || req.body?.key;

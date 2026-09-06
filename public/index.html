@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QR Poll</title>
-  <link rel="stylesheet" href="/style.css?v=10" />
+  <link rel="stylesheet" href="/style.css?v=11" />
 </head>
 <body>
   <div class="center">
@@ -21,10 +21,10 @@
 
       <p class="count">🔐 <b>Presenter</b> — temporary access</p>
       <form id="accessForm">
-        <input id="accessCode" inputmode="numeric" placeholder="Event code (e.g. 9587463)" required />
         <input id="accessEmail" type="email" placeholder="Presenter email" required />
-        <button class="ghost">Open presenter console</button>
+        <button class="ghost">Find my events</button>
       </form>
+      <div id="sessions" class="sessions" hidden></div>
 
       <div class="or">or create a new event</div>
 
@@ -35,7 +35,7 @@
         <button class="ghost">Create event →</button>
       </form>
       <p id="err" class="err"></p>
-      <p class="hint-sm">Temporary access uses your event code and presenter email. Email verification will be added later.</p>
+      <p class="hint-sm">Temporary access: enter the presenter email you used, and we'll list your events. Email verification will be added later.</p>
     </div>
     <a class="report-link" href="/report/">📄 이 서비스를 AI로 어떻게 만들었나 — 빌드 리포트 →</a>
   </div>
@@ -51,14 +51,34 @@
       e.preventDefault();
       err.textContent = "";
       const btn = e.target.querySelector("button"); btn.disabled = true;
+      const box = document.getElementById("sessions");
+      box.hidden = true; box.replaceChildren();
       try {
-        const r = await fetch("/presenter/access", {
+        const r = await fetch("/presenter/events", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: accessCode.value.trim(), presenterEmail: accessEmail.value.trim() }),
+          body: JSON.stringify({ presenterEmail: accessEmail.value.trim() }),
         });
         const d = await r.json();
-        if (!r.ok) { err.textContent = d.error || "Could not open presenter console."; btn.disabled = false; return; }
-        location.href = d.accessUrl;
+        btn.disabled = false;
+        if (!r.ok) { err.textContent = d.error || "Could not look up your events."; return; }
+        const list = d.events || [];
+        if (!list.length) { err.textContent = "No events found for that email."; return; }
+        if (list.length === 1) { location.href = list[0].accessUrl; return; }
+        const head = document.createElement("div");
+        head.className = "sessions-title";
+        head.textContent = `${list.length} events`;
+        box.append(head);
+        for (const ev of list) {
+          const a = document.createElement("a");
+          a.className = "session";
+          a.href = ev.accessUrl;
+          const t = document.createElement("b"); t.textContent = ev.title || "(untitled)";
+          const s = document.createElement("span");
+          s.textContent = `code ${ev.code} · ${ev.polls} poll${ev.polls === 1 ? "" : "s"}`;
+          a.append(t, s);
+          box.append(a);
+        }
+        box.hidden = false;
       } catch { err.textContent = "Network error."; btn.disabled = false; }
     });
 
