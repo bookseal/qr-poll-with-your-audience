@@ -306,16 +306,14 @@ app.post("/presenter/access", (req, res) => {
   res.json({ accessUrl: `/admin/${encodeURIComponent(code)}?key=${encodeURIComponent(meta.adminKey)}` });
 });
 
-// 발표자 이메일만으로 본인 이벤트 목록 조회 (임시 접근 — 이메일 인증은 추후)
-const lastLookup = new Map(); // ip -> ts
-app.post("/presenter/events", (req, res) => {
-  const ip = req.headers["cf-connecting-ip"] || req.ip;
-  if (Date.now() - (lastLookup.get(ip) || 0) < 1500)
-    return res.status(429).json({ error: "Please try again in a moment." });
-  lastLookup.set(ip, Date.now());
-  const email = String(req.body?.presenterEmail || "").trim().toLowerCase();
-  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: "Please enter a valid presenter email." });
-  const events = fs.readdirSync(EVENTS_DIR)
+// --- 발표자 매직링크 로그인 ---
+// 이메일로 1회용 링크를 보내고, 그 링크로 들어와야 본인 이벤트 목록(관리자 링크)을 볼 수 있다.
+const MAGIC_TTL_MS = 15 * 60 * 1000;
+const magicTokens = new Map(); // token -> { email, exp, used }
+const lastLogin = new Map(); // ip -> ts
+
+function eventsForEmail(email) {
+  return fs.readdirSync(EVENTS_DIR)
     .filter((f) => f.endsWith(".json"))
     .map((f) => { try { return JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, f), "utf8")); } catch { return null; } })
     .filter((m) => m && String(m.presenterEmail || "").toLowerCase() === email)
@@ -325,7 +323,73 @@ app.post("/presenter/events", (req, res) => {
       polls: (m.polls || []).length,
       accessUrl: `/admin/${encodeURIComponent(m.code)}?key=${encodeURIComponent(m.adminKey)}`,
     }));
-  res.json({ events });
+}
+
+function baseUrl(req) {
+  return `${req.headers["x-forwarded-proto"] || req.protocol}://${req.get("host")}`;
+}
+
+async function sendMagicLink(to, link) {
+  const user = process.env.GMAIL_ADDRESS;
+  const pass = process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, "");
+  if (!user || !pass) throw new Error("mail not configured");
+  const { default: nodemailer } = await import("nodemailer");
+  const tx = nodemailer.createTransport({
+    host: "smtp.gmail.com", port: 465, secure: true, auth: { user, pass },
+  });
+  await tx.sendMail({
+    from: `QR Poll <${user}>`,
+    to,
+    subject: "QR Poll — your presenter sign-in link",
+    text: `Open your presenter console (valid 15 minutes, one-time):\n\n${link}\n\nIf you didn't request this, ignore this email.`,
+    html: `<p>Open your presenter console — valid for 15 minutes, one-time use.</p>
+<p><a href="${link}" style="display:inline-block;padding:11px 18px;background:#e0442e;color:#fff;border-radius:10px;text-decoration:none;font-weight:700">Open presenter console</a></p>
+<p style="color:#888;font-size:12px">If you didn't request this, ignore this email.</p>`,
+  });
+}
+
+app.post("/presenter/login", async (req, res) => {
+  const ip = req.headers["cf-connecting-ip"] || req.ip;
+  if (Date.now() - (lastLogin.get(ip) || 0) < 3000)
+    return res.status(429).json({ error: "Please try again in a moment." });
+  lastLogin.set(ip, Date.now());
+  const email = String(req.body?.presenterEmail || "").trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: "Please enter a valid presenter email." });
+  // 이벤트가 없어도 동일하게 응답한다 (계정 존재 여부를 노출하지 않음)
+  if (eventsForEmail(email).length) {
+    const token = crypto.randomBytes(24).toString("hex");
+    magicTokens.set(token, { email, exp: Date.now() + MAGIC_TTL_MS, used: false });
+    try {
+      await sendMagicLink(email, `${baseUrl(req)}/presenter/verify?token=${token}`);
+    } catch (e) {
+      magicTokens.delete(token);
+      console.error("magic link send failed:", e.message);
+      return res.status(500).json({ error: "Could not send the email. Try again later." });
+    }
+  }
+  res.json({ ok: true });
+});
+
+app.get("/presenter/verify", (req, res) => {
+  const token = String(req.query.token || "");
+  const rec = magicTokens.get(token);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const page = (body) => `<!doctype html><html lang="en"><head><meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QR Poll · Presenter</title><link rel="stylesheet" href="/style.css?v=12" /></head>
+<body><div class="center"><div class="card">${body}</div></div></body></html>`;
+  if (!rec || rec.used || rec.exp < Date.now()) {
+    magicTokens.delete(token);
+    return res.status(400).send(page(`<h1>Link expired</h1><p class="hint-sm">This sign-in link is invalid, already used, or older than 15 minutes.</p><p><a href="/">← Back to QR Poll</a></p>`));
+  }
+  rec.used = true;
+  magicTokens.delete(token);
+  const events = eventsForEmail(rec.email);
+  const list = events.map((e) => `<a class="session" href="${esc(e.accessUrl)}"><b>${esc(e.title || "(untitled)")}</b><span>code ${esc(e.code)} · ${e.polls} poll${e.polls === 1 ? "" : "s"}</span></a>`).join("");
+  res.send(page(`<h1>💬 QR Poll</h1>
+<p class="count">🔐 Signed in as <b>${esc(rec.email)}</b></p>
+<div class="sessions">${list || "<p class='hint-sm'>No events found.</p>"}</div>
+<p class="hint-sm">Bookmark a console link to get back without email next time.</p>`));
 });
 
 // 관리자 키 검증 (query.key 또는 body.key)

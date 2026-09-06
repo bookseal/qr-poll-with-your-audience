@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QR Poll</title>
-  <link rel="stylesheet" href="/style.css?v=11" />
+  <link rel="stylesheet" href="/style.css?v=12" />
 </head>
 <body>
   <div class="center">
@@ -22,7 +22,7 @@
       <p class="count">🔐 <b>Presenter</b> — temporary access</p>
       <form id="accessForm">
         <input id="accessEmail" type="email" placeholder="Presenter email" required />
-        <button class="ghost">Find my events</button>
+        <button class="ghost">Email me a sign-in link</button>
       </form>
       <div id="sessions" class="sessions" hidden></div>
 
@@ -35,7 +35,7 @@
         <button class="ghost">Create event →</button>
       </form>
       <p id="err" class="err"></p>
-      <p class="hint-sm">Temporary access: enter the presenter email you used, and we'll list your events. Email verification will be added later.</p>
+      <p class="hint-sm">Enter the presenter email you used — we'll email you a one-time sign-in link (valid 15 minutes).</p>
     </div>
     <a class="report-link" href="/report/">📄 이 서비스를 AI로 어떻게 만들었나 — 빌드 리포트 →</a>
   </div>
@@ -54,30 +54,17 @@
       const box = document.getElementById("sessions");
       box.hidden = true; box.replaceChildren();
       try {
-        const r = await fetch("/presenter/events", {
+        const r = await fetch("/presenter/login", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ presenterEmail: accessEmail.value.trim() }),
         });
         const d = await r.json();
         btn.disabled = false;
-        if (!r.ok) { err.textContent = d.error || "Could not look up your events."; return; }
-        const list = d.events || [];
-        if (!list.length) { err.textContent = "No events found for that email."; return; }
-        if (list.length === 1) { location.href = list[0].accessUrl; return; }
-        const head = document.createElement("div");
-        head.className = "sessions-title";
-        head.textContent = `${list.length} events`;
-        box.append(head);
-        for (const ev of list) {
-          const a = document.createElement("a");
-          a.className = "session";
-          a.href = ev.accessUrl;
-          const t = document.createElement("b"); t.textContent = ev.title || "(untitled)";
-          const s = document.createElement("span");
-          s.textContent = `code ${ev.code} · ${ev.polls} poll${ev.polls === 1 ? "" : "s"}`;
-          a.append(t, s);
-          box.append(a);
-        }
+        if (!r.ok) { err.textContent = d.error || "Could not send the sign-in link."; return; }
+        const note = document.createElement("p");
+        note.className = "sent-note";
+        note.textContent = "📧 Check your inbox — we sent a sign-in link (valid 15 minutes).";
+        box.append(note);
         box.hidden = false;
       } catch { err.textContent = "Network error."; btn.disabled = false; }
     });
