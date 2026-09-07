@@ -10,7 +10,9 @@ const DATA_DIR = path.join(__dirname, "data");
 const EVENTS_DIR = path.join(__dirname, "events");
 const MAX_LEN = 500;
 const RATE_MS = 800; // ponytail: IP당 최소 간격. 분산 배포 땐 Redis로 승급.
-const MAX_EVENTS = 10; // 남용 방지: 서버가 담는 이벤트 총량 상한
+// 남용 방지용 상한(자원 한계가 아님). 이벤트 1개 ≈ 15KB라 수천 개도 부담 없다.
+// MAX_EVENTS=0 이면 무제한. 환경변수로 조절.
+const MAX_EVENTS = Number(process.env.MAX_EVENTS ?? 500);
 const MAX_TITLE = 80;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_POLL_TITLE = 160;
@@ -286,7 +288,7 @@ app.post("/new", (req, res) => {
   const presenterEmail = String(req.body?.presenterEmail || "").trim().toLowerCase();
   if (!title) return res.status(400).json({ error: "Please enter an event title." });
   if (!EMAIL_RE.test(presenterEmail)) return res.status(400).json({ error: "Please enter a valid presenter email." });
-  if (eventCount() >= MAX_EVENTS)
+  if (MAX_EVENTS > 0 && eventCount() >= MAX_EVENTS)
     return res.status(403).json({ error: `Event limit reached (maximum ${MAX_EVENTS}).` });
   const code = newCode();
   if (!code) return res.status(500).json({ error: "Could not generate an event code." });
