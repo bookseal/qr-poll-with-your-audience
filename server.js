@@ -296,16 +296,6 @@ app.post("/new", (req, res) => {
   res.json({ code, key });
 });
 
-// Temporary presenter recovery. Email verification will replace this later.
-app.post("/presenter/access", (req, res) => {
-  const code = String(req.body?.code || "").trim();
-  const email = String(req.body?.presenterEmail || "").trim().toLowerCase();
-  const meta = eventMeta(code);
-  if (!meta || !meta.presenterEmail || meta.presenterEmail.toLowerCase() !== email)
-    return res.status(403).json({ error: "The event code and presenter email do not match." });
-  res.json({ accessUrl: `/admin/${encodeURIComponent(code)}?key=${encodeURIComponent(meta.adminKey)}` });
-});
-
 // --- 발표자 매직링크 로그인 ---
 // 이메일로 1회용 링크를 보내고, 그 링크로 들어와야 본인 이벤트 목록(관리자 링크)을 볼 수 있다.
 const MAGIC_TTL_MS = 15 * 60 * 1000;
